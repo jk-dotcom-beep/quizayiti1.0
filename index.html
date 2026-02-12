@@ -1,0 +1,3733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizAyiti - Aprann ak Plezi</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Application de quiz éducatif haïtien - Apprendre en jouant avec QuizAyiti">
+    <meta name="theme-color" content="#991b1b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="QuizAyiti">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        /* Variables pour thème clair/nuit */
+        :root {
+            --bg-gradient-start: #1e3a8a;
+            --bg-gradient-end: #991b1b;
+            --container-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --card-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --shadow: rgba(0,0,0,0.3);
+            
+            /* Surfaces blanches */
+            --white-surface: #ffffff;
+            --btn-secondary-bg: white;
+            --option-bg: white;
+            --modal-bg: white;
+            --input-bg: white;
+            --header-gradient-start: #1e40af;
+            --header-gradient-end: #dc2626;
+            
+            /* Options correct/incorrect */
+            --option-correct-bg: #d1fae5;
+            --option-incorrect-bg: #fee2e2;
+        }
+        
+        body.dark-mode {
+            --bg-gradient-start: #0f172a;
+            --bg-gradient-end: #7f1d1d;
+            --container-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --card-bg: #334155;
+            --border-color: #475569;
+            --shadow: rgba(0,0,0,0.6);
+            
+            /* Surfaces blanches en mode nuit */
+            --white-surface: #334155;
+            --btn-secondary-bg: #475569;
+            --option-bg: #1e293b;
+            --modal-bg: #1e293b;
+            --input-bg: #334155;
+            --header-gradient-start: #1e3a8a;
+            --header-gradient-end: #991b1b;
+            
+            /* Options correct/incorrect en mode nuit (plus foncés) */
+            --option-correct-bg: #064e3b;
+            --option-incorrect-bg: #7f1d1d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            background: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px var(--shadow);
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+            max-height: 95vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .settings-icon {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        .pause-icon {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.9;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 3px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header .subtitle {
+            font-size: 13px;
+            opacity: 0.9;
+            font-style: italic;
+        }
+
+        .content {
+            padding: 20px;
+            max-height: calc(95vh - 100px);
+            overflow-y: auto;
+        }
+
+        /* Écran de bienvenue */
+        .welcome-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .flag-animation {
+            font-size: 80px;
+            margin-bottom: 25px;
+            animation: wave 2s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        .welcome-title {
+            font-size: 30px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        /* Écrans */
+        .menu-screen, .category-screen, .quiz-screen, .result-screen, .leaderboard-screen, .settings-screen, .welcome-screen, .pause-screen, .profile-screen, .levels-screen, .daily-challenge-screen, .level-up-screen {
+            display: none;
+        }
+
+        .menu-screen.active, .category-screen.active, .quiz-screen.active, .result-screen.active, .leaderboard-screen.active, .settings-screen.active, .welcome-screen.active, .pause-screen.active, .profile-screen.active, .levels-screen.active, .daily-challenge-screen.active, .level-up-screen.active {
+            display: block;
+        }
+
+        .profile-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #3b82f6, #ef4444);
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .profile-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .profile-level {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .profile-level:hover {
+            color: #3b82f6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            position: relative;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--white-surface);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .category-card {
+            background: var(--white-surface);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card::before {
+            content: attr(data-symbols);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            opacity: 0.05;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            line-height: 1;
+        }
+
+        .category-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .category-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .category-card h3 {
+            color: var(--text-primary);
+            font-size: 16px;
+            margin-bottom: 3px;
+        }
+
+        .category-card p {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .badge-francais { background: #dbeafe; color: #1e40af; }
+        .badge-maths { background: #dcfce7; color: #166534; }
+        .badge-sciences { background: #f3e8ff; color: #6b21a8; }
+        .badge-creole { background: #fef3c7; color: #92400e; }
+        .badge-culture-haitienne { background: #fee2e2; color: #991b1b; }
+        .badge-culture-generale { background: #f1f5f9; color: #475569; }
+        .badge-mixte { background: linear-gradient(135deg, #dbeafe, #fee2e2); color: var(--text-primary); }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .timer {
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .timer.warning {
+            animation: pulse-warning 0.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-warning {
+            0%, 100% { transform: scale(1); background: #ef4444; }
+            50% { transform: scale(1.08); background: #dc2626; }
+        }
+
+        .progress {
+            background: #e2e8f0;
+            height: 6px;
+            border-radius: 3px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .question-card {
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .question-text {
+            font-size: 16px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+        }
+
+        .option {
+            background: var(--white-surface);
+            border: 2px solid var(--border-color);
+            padding: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .option:hover {
+            border-color: #3b82f6;
+            background: var(--card-bg);
+        }
+
+        .option.correct {
+            border-color: #10b981;
+            background: var(--option-correct-bg);
+        }
+
+        .option.incorrect {
+            border-color: #ef4444;
+            background: var(--option-incorrect-bg);
+        }
+
+        .explanation-card {
+            background: var(--card-bg);
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .explanation-card.show {
+            display: block;
+        }
+
+        .explanation-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #3b82f6;
+            font-size: 14px;
+        }
+
+        .explanation-icon {
+            font-size: 16px;
+            margin-right: 6px;
+        }
+
+        .explanation-text {
+            color: var(--text-primary);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        /* Badge emblème */
+        .badge-container {
+            display: inline-block;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 8px;
+            text-align: center;
+            min-width: 100px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .badge-container.unlocked {
+            background: linear-gradient(135deg, #fef3c7, #fbbf24);
+            border-color: #f59e0b;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+        }
+
+        .badge-container.locked {
+            opacity: 0.7;
+        }
+        
+        body.dark-mode .badge-container.locked {
+            opacity: 0.9;
+        }
+
+        .badge-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+
+        .badge-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .badge-progress {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .progress-mini {
+            background: #e2e8f0;
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .progress-mini-bar {
+            background: #3b82f6;
+            height: 100%;
+        }
+
+        /* Level up screen */
+        .level-up-overlay {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
+            padding: 40px 20px;
+            text-align: center;
+            animation: celebration 0.6s ease-out;
+        }
+
+        @keyframes celebration {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .level-up-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: bounce 0.5s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .level-up-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .level-up-message {
+            font-size: 18px;
+            color: white;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+
+        .result-card {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .result-icon {
+            font-size: 70px;
+            margin-bottom: 15px;
+        }
+
+        .result-score {
+            font-size: 42px;
+            font-weight: bold;
+            color: #3b82f6;
+            margin-bottom: 8px;
+        }
+
+        .result-text {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .stat-value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .settings-section {
+            margin-bottom: 20px;
+        }
+
+        .settings-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .setting-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 46px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #3b82f6;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: var(--white-surface);
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(22px);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            margin: 0;
+            width: auto;
+        }
+
+        .leaderboard-list {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--white-surface);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .leaderboard-item.you {
+            background: var(--card-bg);
+            border: 2px solid #3b82f6;
+        }
+
+        .rank {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 12px;
+            font-size: 14px;
+        }
+
+        .rank.gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .rank.silver { background: linear-gradient(135deg, #94a3b8, #64748b); }
+        .rank.bronze { background: linear-gradient(135deg, #f97316, #ea580c); }
+
+        .player-info {
+            flex: 1;
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .player-stats {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .player-score {
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .your-rank-section {
+            background: var(--card-bg);
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .your-rank-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #3b82f6;
+            margin-bottom: 10px;
+        }
+
+        .your-rank-info {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .your-rank-message {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .back-btn {
+            background: var(--card-bg);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .pause-modal {
+            background: var(--white-surface);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .pause-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .profile-modal {
+            background: var(--white-surface);
+            border-radius: 16px;
+            padding: 25px;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .level-progress-bar {
+            background: #e2e8f0;
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .level-progress-fill {
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .badges-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 20px 0 12px 0;
+        }
+
+        .levels-list {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .level-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--white-surface);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 2px solid transparent;
+        }
+
+        .level-item.current {
+            border-color: #3b82f6;
+            background: var(--card-bg);
+        }
+
+        .level-medal {
+            font-size: 32px;
+            margin-right: 15px;
+        }
+
+        .level-details {
+            flex: 1;
+        }
+
+        .level-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 15px;
+        }
+
+        .level-range {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .daily-challenge-card {
+            background: linear-gradient(135deg, #fef3c7, #fbbf24);
+            border: 3px solid #f59e0b;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .challenge-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .challenge-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .challenge-description {
+            font-size: 14px;
+            color: #475569;
+            margin-bottom: 20px;
+        }
+
+        .challenge-reward {
+            background: var(--white-surface);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .challenge-timer {
+            font-size: 16px;
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .header h1 { font-size: 24px; }
+            .question-text { font-size: 15px; }
+            .option { padding: 12px; font-size: 14px; }
+        }
+
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #fbbf24;
+            animation: confetti 3s linear;
+        }
+
+        /* Cœurs */
+        .hearts-display {
+            font-size: 24px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .hearts-display:hover {
+            transform: scale(1.1);
+        }
+
+        .hearts-count {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .quiz-hearts {
+            font-size: 20px;
+        }
+
+        /* Hearts Shop */
+        .hearts-shop-screen {
+            display: none;
+        }
+
+        .hearts-shop-screen.active {
+            display: block;
+        }
+
+        .hearts-shop-card {
+            background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+            border: 3px solid #ec4899;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .shop-hearts-display {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .shop-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .shop-description {
+            font-size: 14px;
+            color: #475569;
+            margin-bottom: 20px;
+        }
+
+        .hearts-packs {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .pack-card {
+            background: var(--white-surface);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pack-card:hover {
+            border-color: #ec4899;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.2);
+        }
+
+        .pack-hearts {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .pack-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+
+        /* No Hearts Modal */
+        .no-hearts-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .no-hearts-card {
+            background: var(--white-surface);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .no-hearts-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .no-hearts-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ef4444;
+            margin-bottom: 15px;
+        }
+
+        .no-hearts-message {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+        }
+
+        /* Player Details Modal */
+        .player-details-modal {
+            display: none;
+        }
+
+        .player-details-modal.active {
+            display: block;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .player-details-card {
+            background: var(--white-surface);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-details-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .player-details-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #3b82f6, #ef4444);
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .category-symbols {
+            font-size: 20px;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hearts Shop Modal */
+        .hearts-shop-modal {
+            display: none;
+        }
+
+        .hearts-shop-modal.active {
+            display: block;
+        }
+
+        .hearts-shop-modal-card {
+            background: var(--white-surface);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 450px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Modal pour détails précision */
+        .precision-modal {
+            display: none;
+        }
+
+        .precision-modal.active {
+            display: block;
+        }
+
+        .precision-modal-card {
+            background: var(--white-surface);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 350px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .precision-modal-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .precision-detail {
+            font-size: 18px;
+            color: #475569;
+            margin-bottom: 15px;
+        }
+
+        /* Modal pour détails points */
+        .points-details-modal {
+            display: none;
+        }
+
+        .points-details-modal.active {
+            display: block;
+        }
+
+        .points-details-card {
+            background: var(--white-surface);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .points-details-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .points-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .points-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #3b82f6;
+            margin-bottom: 10px;
+        }
+
+        .points-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .points-item:last-child {
+            border-bottom: none;
+        }
+
+        .points-total {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-primary);
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #3b82f6;
+        }
+
+        /* Restore Modal */
+        .restore-modal {
+            display: none;
+        }
+
+        .restore-modal.active {
+            display: block;
+        }
+
+        .restore-modal-card {
+            background: var(--white-surface);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .restore-modal-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="settings-icon" id="settingsIcon" onclick="showSettings()" style="display: none;">⚙️</div>
+            <h1>🇭🇹 QuizAyiti</h1>
+            <p class="subtitle">Aprann ak Plezi</p>
+        </div>
+
+        <div class="content">
+            <!-- Écran de Bienvenue -->
+            <div class="welcome-screen active">
+                <div class="flag-animation">🇭🇹</div>
+                <div class="welcome-title">Byenveni nan QuizAyiti!</div>
+                <div class="welcome-subtitle">Apprendre en jouant</div>
+                <button class="btn btn-primary" onclick="closeWelcome()">Kòmanse 🚀</button>
+            </div>
+
+            <!-- Menu Principal -->
+            <div class="menu-screen">
+                <div class="profile-section">
+                    <div class="profile-avatar" id="profileAvatar" onclick="showProfile()">E</div>
+                    <div class="profile-name" id="profileName">Érudit</div>
+                    <div class="profile-level" id="profileLevel" onclick="showLevels()">🥉 Débutant</div>
+                    <div id="syncBadge" style="display: none; background: #fbbf24; color: #1e293b; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin: 8px auto 0; text-align: center; width: fit-content;">
+                        📡 Sync en attente...
+                    </div>
+                    <div class="hearts-display" id="heartsDisplay" onclick="showHeartsShopModal()" style="cursor: pointer;">
+                        <span>❤️❤️❤️</span>
+                        <span style="margin-left: 8px; font-size: 22px;" title="Boutique">🛒</span>
+                        <div class="hearts-count" id="heartsCount">(3 vies)</div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="userPoints">0</div>
+                        <div class="stat-label">Points</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="userCoins">0</div>
+                        <div class="stat-label">🪙 Jetons</div>
+                    </div>
+                    <div class="stat-box" onclick="showPrecisionDetails()" style="cursor: pointer;" title="Voir les détails">
+                        <div class="stat-value" id="userAccuracy">0%</div>
+                        <div class="stat-label">📊 Précision</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="showCategories()">🎯 Jouer Maintenant</button>
+                <button class="btn btn-secondary" onclick="showLeaderboard()">🏆 Classement</button>
+                <button class="btn btn-secondary" id="dailyChallengeBtn" onclick="showDailyChallenge()">
+                    ⚡ Défi Quotidien
+                    <span class="notification-badge" id="challengeBadge" style="display: none;">NOUVEAU</span>
+                </button>
+            </div>
+
+            <!-- Écran Profil -->
+            <div class="profile-screen">
+                <div class="profile-modal">
+                    <button class="back-btn" onclick="showMenu()">← Retour</button>
+                    <div class="profile-header">
+                        <div class="profile-avatar" style="width: 80px; height: 80px; font-size: 40px; margin: 0 auto 10px;" id="profileAvatarModal">E</div>
+                        <div class="profile-name" id="profileNameModal">Érudit</div>
+                        <div class="profile-level" id="profileLevelModal">🥉 Débutant</div>
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-top: 8px;">
+                            <strong id="totalBadgesCount">0</strong> badges gagnés 🏅
+                        </div>
+                    </div>
+                    
+                    <div class="section-title">Progression</div>
+                    <div class="level-progress-bar">
+                        <div class="level-progress-fill" id="levelProgressFill" style="width: 0%"></div>
+                    </div>
+                    <div class="level-info">
+                        <span id="currentLevelPoints">0 pts</span>
+                        <span id="nextLevelPoints">500 pts</span>
+                    </div>
+                    <div style="text-align: center; font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">
+                        <strong>Prochain niveau :</strong> <span id="nextLevelName">🥈 Apprenti</span><br>
+                        <span id="pointsToNext">Encore 500 points !</span>
+                    </div>
+
+                    <div class="section-title">📊 Statistiques</div>
+                    <div class="stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Parties jouées</span>
+                            <span class="stat-value" id="totalGamesProfile">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Bonnes réponses</span>
+                            <span class="stat-value" id="correctAnswersProfile">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Mauvaises réponses</span>
+                            <span class="stat-value" id="wrongAnswersProfile">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Précision</span>
+                            <span class="stat-value" id="accuracyProfile">0%</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Série actuelle</span>
+                            <span class="stat-value" id="streakProfile">0 jours 🔥</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Jetons collectés</span>
+                            <span class="stat-value" id="coinsProfile">0 🪙</span>
+                        </div>
+                    </div>
+
+                    <div class="section-title">🔑 Code de Sauvegarde</div>
+                    <div style="background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">
+                            Sauvegarde ce code pour récupérer ton compte sur un autre appareil
+                        </div>
+                        <input type="text" id="recoveryCodeDisplay" readonly style="width: 100%; padding: 12px; background: var(--input-bg); border: 2px solid var(--border-color); border-radius: 8px; font-weight: bold; font-size: 16px; text-align: center; letter-spacing: 1px; margin-bottom: 10px; color: var(--text-primary);" value="QUIZ-XXXX-XXXX-XXXX">
+                        <button class="btn btn-primary" onclick="copyRecoveryCode()" style="width: 100%;">📋 Copier le Code</button>
+                    </div>
+
+                    <div class="section-title">🏅 Emblèmes</div>
+                    <div class="badges-grid" id="badgesGrid"></div>
+                </div>
+            </div>
+
+            <!-- Écran Niveaux -->
+            <div class="levels-screen">
+                <button class="back-btn" onclick="showMenu()">← Retour</button>
+                <h2 style="margin-bottom: 15px; color: var(--text-primary); font-size: 18px;">🏆 Tous les Niveaux</h2>
+                <div class="levels-list" id="levelsList"></div>
+            </div>
+
+            <!-- Défi Quotidien -->
+            <div class="daily-challenge-screen">
+                <button class="back-btn" onclick="showMenu()">← Retour</button>
+                <div class="daily-challenge-card" id="dailyChallengeCard"></div>
+            </div>
+
+            <!-- Sélection Thématique -->
+            <div class="category-screen">
+                <button class="back-btn" onclick="showMenu()">← Retour</button>
+                <h2 style="margin-bottom: 15px; color: var(--text-primary); font-size: 18px;">Choisis ta thématique</h2>
+                <div class="category-grid" id="categoryGrid"></div>
+            </div>
+
+            <!-- Écran Quiz -->
+            <div class="quiz-screen">
+                <div class="pause-icon" onclick="pauseQuiz()">⏸</div>
+                <div id="categoryBadge" class="category-badge"></div>
+                <div class="quiz-header">
+                    <div style="font-size: 14px; color: var(--text-secondary);">Question <span id="currentQ">1</span>/<span id="totalQ">10</span></div>
+                    <div class="quiz-hearts" id="quizHearts" onclick="openShopFromQuiz()" style="cursor: pointer;" title="Acheter des vies">❤️❤️❤️</div>
+                    <div class="timer" id="timer">30</div>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar" style="width: 10%"></div>
+                </div>
+                <div class="question-card">
+                    <div class="question-text" id="questionText">Chargement...</div>
+                </div>
+                <div class="options" id="options"></div>
+                <div class="explanation-card" id="explanationCard">
+                    <div class="explanation-header">
+                        <span class="explanation-icon">💡</span>
+                        <span>Explication</span>
+                    </div>
+                    <div class="explanation-text" id="explanationText"></div>
+                </div>
+                <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" style="display: none; margin-top: 15px;">Suivant →</button>
+            </div>
+
+            <!-- Pause Modal -->
+            <div class="pause-screen">
+                <div class="pause-modal">
+                    <div class="pause-title">⏸ Pause</div>
+                    <button class="btn btn-primary" onclick="resumeQuiz()">▶️ Continuer</button>
+                    <button class="btn btn-secondary" onclick="showSettingsFromPause()">⚙️ Paramètres</button>
+                    <button class="btn btn-secondary" onclick="restartQuiz()">🔄 Recommencer</button>
+                    <button class="btn btn-secondary" onclick="changeThemeFromPause()">🎯 Changer thématique</button>
+                    <button class="btn btn-secondary" onclick="quitQuiz()">🏠 Quitter</button>
+                </div>
+            </div>
+
+            <!-- Level Up Screen -->
+            <div class="level-up-screen">
+                <div class="level-up-overlay">
+                    <div class="level-up-icon" id="levelUpIcon">🎉</div>
+                    <div class="level-up-title" id="levelUpTitle">Félicitations !</div>
+                    <div class="level-up-message" id="levelUpMessage">Tu es maintenant Apprenti !</div>
+                    <button class="btn btn-primary" onclick="closeLevelUp()" style="background: var(--white-surface); color: #1e40af;">Continuer 🚀</button>
+                </div>
+            </div>
+
+            <!-- Écran Résultats -->
+            <div class="result-screen">
+                <div class="result-card">
+                    <div class="result-icon" id="resultIcon">🎉</div>
+                    <div class="result-score"><span id="finalPoints">0</span> pts</div>
+                    <div class="result-text" id="resultText">Excellent travail !</div>
+                    <div class="stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Bonnes réponses</span>
+                            <span class="stat-value" id="correctAnswers">0/10</span>
+                        </div>
+                        <div class="stat-row" onclick="showPointsDetails()" style="cursor: pointer;" title="Voir les détails">
+                            <span class="stat-label">Points gagnés</span>
+                            <span class="stat-value" id="pointsGained">+0</span>
+                        </div>
+                        <div class="stat-row" onclick="showPointsDetails()" style="cursor: pointer;" title="Voir les détails">
+                            <span class="stat-label">Points bonus</span>
+                            <span class="stat-value" id="bonusPoints">+0</span>
+                        </div>
+                        <div class="stat-row" onclick="showCoinsDetails()" style="cursor: pointer;" title="Voir les détails">
+                            <span class="stat-label">Jetons gagnés</span>
+                            <span class="stat-value" id="coinsGained">+0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Niveau actuel</span>
+                            <span class="stat-value" id="newLevel">🥉 Débutant</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="restartQuiz()">🔄 Rejouer</button>
+                    <button class="btn btn-secondary" onclick="showCategories()">📚 Changer thématique</button>
+                    <button class="btn btn-secondary" onclick="showLeaderboard()">🏆 Voir le Classement</button>
+                    <button class="btn btn-secondary" onclick="showMenu()">🏠 Menu Principal</button>
+                </div>
+            </div>
+
+            <!-- Classement -->
+            <div class="leaderboard-screen">
+                <button class="back-btn" onclick="goBackFromLeaderboard()">← Retour</button>
+                <h2 style="margin-bottom: 15px; color: var(--text-primary); font-size: 18px;">🏆 Classement Global</h2>
+                <div style="text-align: center; margin-bottom: 10px; font-size: 13px; color: var(--text-secondary);">Top 10</div>
+                <div class="leaderboard-list" id="leaderboardList"></div>
+                <div class="your-rank-section" id="yourRankSection" style="display: none;">
+                    <div class="your-rank-title">TON RANG</div>
+                    <div class="your-rank-info" id="yourRankInfo">#15 - Kenley</div>
+                    <div class="player-stats" id="yourRankStats">890 pts • 450 🪙</div>
+                    <div class="your-rank-message" id="yourRankMessage">↑ Continue ! Plus que 340 pts pour le Top 10 !</div>
+                </div>
+            </div>
+
+            <!-- Paramètres -->
+            <div class="settings-screen">
+                <button class="back-btn" onclick="closeSettings()">← Retour</button>
+                <h2 style="margin-bottom: 15px; color: var(--text-primary); font-size: 18px;">⚙️ Paramètres</h2>
+                
+                <div class="settings-section">
+                    <div class="settings-title">Apparence</div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>🌙</span>
+                            <span>Mode Nuit</span>
+                        </div>
+                        <div class="toggle-switch" id="darkModeToggle" onclick="toggleDarkMode()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">Audio et Vibrations</div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>🔔</span>
+                            <span>Sons</span>
+                        </div>
+                        <div class="toggle-switch" id="soundToggle" onclick="toggleSound()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>📳</span>
+                            <span>Vibrations</span>
+                        </div>
+                        <div class="toggle-switch active" id="vibrationToggle" onclick="toggleVibration()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">Préférences de Jeu</div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>⏱️</span>
+                            <span>Durée par question</span>
+                        </div>
+                        <select id="timerDuration" onchange="saveTimerDuration()" style="padding: 6px; border-radius: 6px; border: 2px solid var(--border-color); font-size: 13px; background: var(--input-bg); color: var(--text-primary);">
+                            <option value="30">30s</option>
+                            <option value="45">45s</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">Profil</div>
+                    <div class="setting-item">
+                        <div class="input-group">
+                            <input type="text" id="nameInput" class="input-field" placeholder="Votre nom">
+                            <button class="btn btn-primary btn-small" onclick="changeName()">✓</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="showRestoreModal()">🔑 Restaurer mon compte</button>
+                <button class="btn btn-secondary" onclick="resetData()">🗑️ Réinitialiser</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, update, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-3CZvY0p8A0-k7ZHCRR5VPqZTeTKm4Lw",
+            authDomain: "quizayiti-e655a.firebaseapp.com",
+            databaseURL: "https://quizayiti-e655a-default-rtdb.firebaseio.com",
+            projectId: "quizayiti-e655a",
+            storageBucket: "quizayiti-e655a.firebasestorage.app",
+            messagingSenderId: "182539004143",
+            appId: "1:182539004143:web:3dd584df1514e9d0e3931a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        window.firebaseDB = database;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
+        window.firebaseGet = get;
+        window.firebaseUpdate = update;
+        window.firebaseOnValue = onValue;
+        window.firebaseQuery = query;
+        window.firebaseOrderByChild = orderByChild;
+        window.firebaseLimitToLast = limitToLast;
+        
+        console.log('✅ Firebase initialisé');
+        initApp();
+        
+        // Enregistrement du Service Worker pour PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker enregistré:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('❌ Erreur Service Worker:', error);
+                    });
+            });
+        }
+        
+        // Gestion du prompt d'installation PWA
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('💾 Installation PWA disponible');
+            // L'utilisateur peut maintenant installer l'app via son navigateur
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ PWA installée avec succès !');
+            deferredPrompt = null;
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script>
+        // Configuration
+        const GOOGLE_SHEETS_API_KEY = 'AIzaSyA125rJg-7CExfMd9LePRGAQwS4bHMWoDQ';
+        const SPREADSHEET_ID = '1exBmy58PSeStY04L9-j3YHgrfnbVSYwB9Aw0cQ95FKI';
+        const SHEET_NAME = 'Questions';
+
+        // Variables globales
+        let userId = '';
+        let userData = {
+            name: '',
+            points: 0,
+            coins: 0,
+            hearts: 3,
+            purchasedHearts: 0,
+            lastHeartReset: '',
+            totalGames: 0,
+            correctAnswers: 0,
+            totalAnswers: 0,
+            streak: 0,
+            lastPlayed: '',
+            level: 1,
+            perfectGames: 0,
+            badges: {},
+            badgeProgress: {},
+            categoryStats: {},
+            dailyChallengeCompleted: false,
+            lastChallengeDate: '',
+            recoveryCode: ''
+        };
+
+        let allQuestions = [];
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let correctCount = 0;
+        let timerInterval;
+        let timeLeft = 30;
+        let currentCategory = '';
+        let currentCategoryKey = ''; // Vraie catégorie Google Sheets
+        let currentCategoryBadge = '';
+        let sessionPoints = 0;
+        let sessionCoins = 0;
+        let sessionBonusPoints = 0;
+        let quizPaused = false;
+        let pausedTime = 0;
+        let fromSettings = false;
+        let fromShop = false;
+        let returnToScreen = 'menu';
+        let previousLevel = 1;
+        let pointsBeforeQuiz = 0; // Points avant de commencer le quiz
+        let deferredPrompt = null; // Pour l'installation PWA
+
+        // Audio
+        let pianoSynth;
+        let violinSynth;
+        let soundEnabled = false;
+        let vibrationEnabled = true;
+        let timerDuration = 30;
+
+        // Mode nuit
+        let darkModeEnabled = false;
+
+        // Sync offline
+        let needsSync = false;
+        let isOnline = navigator.onLine;
+
+        // Niveaux NOUVEAUX
+        const LEVELS = [
+            { min: 0, max: 1000, name: 'Débutant', medal: '🥉' },
+            { min: 1001, max: 2500, name: 'Apprenti', medal: '🥈' },
+            { min: 2501, max: 4000, name: 'Étudiant', medal: '🥇' },
+            { min: 4001, max: 7000, name: 'Savant', medal: '💎' },
+            { min: 7001, max: 10000, name: 'Expert', medal: '🧠' },
+            { min: 10001, max: 15000, name: 'Expert ⭐', medal: '🧠⭐' },
+            { min: 15001, max: 20000, name: 'Expert ⭐⭐', medal: '🧠⭐⭐' },
+            { min: 20001, max: 25000, name: 'Maître ⭐', medal: '👑⭐' },
+            { min: 25001, max: 32000, name: 'Maître ⭐⭐', medal: '👑⭐⭐' },
+            { min: 32001, max: 40000, name: 'Maître ⭐⭐⭐', medal: '👑⭐⭐⭐' },
+            { min: 40001, max: 50000, name: 'Maître ⭐⭐⭐⭐', medal: '👑⭐⭐⭐⭐' },
+            { min: 50001, max: 999999, name: 'Légende', medal: '🏆' }
+        ];
+
+        // Emblèmes NOUVEAUX - Système progressif CORRIGÉ
+        const BADGES = [
+            { 
+                id: 'first_quiz', 
+                name: 'Premier Pas', 
+                icon: '🎯', 
+                levels: [1, 5, 10, 25, 50, 100, 150],
+                getProgress: (data) => data.totalGames || 0,
+                getNextTarget: (current) => {
+                    const targets = [1, 5, 10, 25, 50, 100, 150];
+                    return targets.find(t => t > current) || 150;
+                },
+                descriptions: ['1 quiz joué', '5 quiz joués', '10 quiz joués', '25 quiz joués', '50 quiz joués', '100 quiz joués', '150 quiz joués']
+            },
+            { 
+                id: 'perfect_games', 
+                name: 'Perfectionniste', 
+                icon: '⭐', 
+                levels: [1, 5, 10, 25, 50, 100, 250],
+                getProgress: (data) => data.perfectGames || 0,
+                getNextTarget: (current) => {
+                    const targets = [1, 5, 10, 25, 50, 100, 250];
+                    return targets.find(t => t > current) || 250;
+                },
+                descriptions: ['1 quiz parfait', '5 quiz parfaits', '10 quiz parfaits', '25 quiz parfaits', '50 quiz parfaits', '100 quiz parfaits', '250 quiz parfaits']
+            },
+            { 
+                id: 'streak', 
+                name: 'Enflammé', 
+                icon: '🔥', 
+                levels: [3, 7, 14, 30, 60, 100],
+                getProgress: (data) => data.streak || 0,
+                getNextTarget: (current) => {
+                    const targets = [3, 7, 14, 30, 60, 100];
+                    return targets.find(t => t > current) || 100;
+                },
+                descriptions: ['3 jours', '7 jours', '14 jours', '30 jours', '60 jours', '100 jours']
+            },
+            { 
+                id: 'total_correct', 
+                name: 'Centurion', 
+                icon: '💯', 
+                levels: [50, 100, 500, 1000, 5000],
+                getProgress: (data) => data.correctAnswers || 0,
+                getNextTarget: (current) => {
+                    const targets = [50, 100, 500, 1000, 5000];
+                    return targets.find(t => t > current) || 5000;
+                },
+                descriptions: ['50 bonnes réponses', '100 bonnes réponses', '500 bonnes réponses', '1000 bonnes réponses', '5000 bonnes réponses']
+            },
+            { 
+                id: 'points', 
+                name: 'Collectionneur', 
+                icon: '💰', 
+                levels: [500, 1000, 5000, 10000, 25000, 50000],
+                getProgress: (data) => data.points || 0,
+                getNextTarget: (current) => {
+                    const targets = [500, 1000, 5000, 10000, 25000, 50000];
+                    return targets.find(t => t > current) || 50000;
+                },
+                descriptions: ['500 points', '1000 points', '5000 points', '10000 points', '25000 points', '50000 points']
+            },
+            // BADGES THÉMATIQUES
+            { 
+                id: 'category_francais', 
+                name: 'Expert Français', 
+                icon: '📝', 
+                levels: [10, 25, 50, 100, 250],
+                getProgress: (data) => (data.categoryStats && data.categoryStats['Programme scolaire - Communication française']) ? data.categoryStats['Programme scolaire - Communication française'].correct || 0 : 0,
+                getNextTarget: (current) => {
+                    const targets = [10, 25, 50, 100, 250];
+                    return targets.find(t => t > current) || 250;
+                },
+                descriptions: ['10 bonnes réponses en Français', '25 bonnes réponses en Français', '50 bonnes réponses en Français', '100 bonnes réponses en Français', '250 bonnes réponses en Français']
+            },
+            { 
+                id: 'category_maths', 
+                name: 'Expert Maths', 
+                icon: '🔢', 
+                levels: [10, 25, 50, 100, 250],
+                getProgress: (data) => (data.categoryStats && data.categoryStats['Programme scolaire - Mathématiques']) ? data.categoryStats['Programme scolaire - Mathématiques'].correct || 0 : 0,
+                getNextTarget: (current) => {
+                    const targets = [10, 25, 50, 100, 250];
+                    return targets.find(t => t > current) || 250;
+                },
+                descriptions: ['10 bonnes réponses en Maths', '25 bonnes réponses en Maths', '50 bonnes réponses en Maths', '100 bonnes réponses en Maths', '250 bonnes réponses en Maths']
+            },
+            { 
+                id: 'category_sciences', 
+                name: 'Expert Sciences', 
+                icon: '🔬', 
+                levels: [10, 25, 50, 100, 250],
+                getProgress: (data) => (data.categoryStats && data.categoryStats['Programme scolaire - Sciences']) ? data.categoryStats['Programme scolaire - Sciences'].correct || 0 : 0,
+                getNextTarget: (current) => {
+                    const targets = [10, 25, 50, 100, 250];
+                    return targets.find(t => t > current) || 250;
+                },
+                descriptions: ['10 bonnes réponses en Sciences', '25 bonnes réponses en Sciences', '50 bonnes réponses en Sciences', '100 bonnes réponses en Sciences', '250 bonnes réponses en Sciences']
+            },
+            { 
+                id: 'category_creole', 
+                name: 'Expert Kreyòl', 
+                icon: '🗣️', 
+                levels: [10, 25, 50, 100, 250],
+                getProgress: (data) => (data.categoryStats && data.categoryStats['Programme scolaire - Communication créole']) ? data.categoryStats['Programme scolaire - Communication créole'].correct || 0 : 0,
+                getNextTarget: (current) => {
+                    const targets = [10, 25, 50, 100, 250];
+                    return targets.find(t => t > current) || 250;
+                },
+                descriptions: ['10 bonnes réponses en Kreyòl', '25 bonnes réponses en Kreyòl', '50 bonnes réponses en Kreyòl', '100 bonnes réponses en Kreyòl', '250 bonnes réponses en Kreyòl']
+            },
+            { 
+                id: 'category_culture_haitienne', 
+                name: 'Expert Culture Haïtienne', 
+                icon: '🇭🇹', 
+                levels: [10, 25, 50, 100, 250],
+                getProgress: (data) => (data.categoryStats && data.categoryStats['Culture haïtienne']) ? data.categoryStats['Culture haïtienne'].correct || 0 : 0,
+                getNextTarget: (current) => {
+                    const targets = [10, 25, 50, 100, 250];
+                    return targets.find(t => t > current) || 250;
+                },
+                descriptions: ['10 bonnes réponses en Culture Haïtienne', '25 bonnes réponses en Culture Haïtienne', '50 bonnes réponses en Culture Haïtienne', '100 bonnes réponses en Culture Haïtienne', '250 bonnes réponses en Culture Haïtienne']
+            },
+            { 
+                id: 'category_culture_generale', 
+                name: 'Expert Culture Générale', 
+                icon: '🌍', 
+                levels: [10, 25, 50, 100, 250],
+                getProgress: (data) => (data.categoryStats && data.categoryStats['Culture générale']) ? data.categoryStats['Culture générale'].correct || 0 : 0,
+                getNextTarget: (current) => {
+                    const targets = [10, 25, 50, 100, 250];
+                    return targets.find(t => t > current) || 250;
+                },
+                descriptions: ['10 bonnes réponses en Culture Générale', '25 bonnes réponses en Culture Générale', '50 bonnes réponses en Culture Générale', '100 bonnes réponses en Culture Générale', '250 bonnes réponses en Culture Générale']
+            }
+        ];
+
+        // Défis quotidiens
+        const DAILY_CHALLENGES = [
+            { id: 'perfect', title: '🎯 Parfait', description: 'Obtiens 10/10 à un quiz', reward: 200, check: (data) => data.isPerfect },
+            { id: 'speed', title: '⚡ Rapide', description: 'Réponds à 8 questions en moins de 15s chacune', reward: 200, check: (data) => data.fastAnswers >= 8 },
+            { id: 'endurance', title: '🔥 Endurant', description: 'Joue 3 quiz d\'affilée', reward: 300, check: (data) => data.consecutiveGames >= 3 },
+            { id: 'precision', title: '🧠 Savant', description: 'Obtiens 80% minimum sur 2 quiz', reward: 250, check: (data) => data.highAccuracyGames >= 2 }
+        ];
+
+        let currentDailyChallenge = null;
+        let challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 };
+
+        // Fonction pour chiffrer le code de récupération (SHA-256)
+        async function hashRecoveryCode(code) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(code);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        function generateRecoveryCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = 'QUIZ';
+            for (let i = 0; i < 3; i++) {
+                code += '-';
+                for (let j = 0; j < 4; j++) {
+                    code += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+            }
+            return code; // Format: QUIZ-A3X9-2K4M-7H8P
+        }
+
+        function getLevelInfo(points) {
+            return LEVELS.find(l => points >= l.min && points <= l.max) || LEVELS[0];
+        }
+
+        function getBadgeLevel(badgeId) {
+            const badge = BADGES.find(b => b.id === badgeId);
+            if (!badge) return { current: 0, total: 0, progress: 0, nextTarget: 0 };
+            
+            const progress = badge.getProgress(userData);
+            let currentLevel = 0;
+            
+            // Trouver le niveau actuel en partant du DÉBUT
+            for (let i = 0; i < badge.levels.length; i++) {
+                if (progress >= badge.levels[i]) {
+                    currentLevel = i + 1;
+                } else {
+                    break; // Arrêter dès qu'on trouve un niveau non atteint
+                }
+            }
+            
+            return { 
+                current: currentLevel, 
+                total: badge.levels.length,
+                progress: progress,
+                nextTarget: badge.getNextTarget(progress)
+            };
+        }
+
+        function getTotalBadgesEarned() {
+            let total = 0;
+            BADGES.forEach(badge => {
+                const level = getBadgeLevel(badge.id);
+                // Somme des niveaux accomplis de tous les badges
+                total += level.current;
+            });
+            return total;
+        }
+
+        // Initialisation
+        async function initApp() {
+            userId = localStorage.getItem('quizUserId');
+            if (!userId) {
+                userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('quizUserId', userId);
+            }
+
+            // Charger état de sync
+            needsSync = localStorage.getItem('needsSync') === 'true';
+            isOnline = navigator.onLine;
+
+            // Listeners online/offline
+            window.addEventListener('online', async () => {
+                isOnline = true;
+                console.log('🌐 Connexion rétablie !');
+                await syncPendingData();
+            });
+
+            window.addEventListener('offline', () => {
+                isOnline = false;
+                console.log('📵 Connexion perdue - Mode offline');
+            });
+
+            loadSettings();
+            await loadUserData();
+            checkDailyChallenge();
+            checkAndResetHearts();
+            initAudio();
+            updateSyncBadge();
+        }
+
+        function initAudio() {
+            if (typeof Tone !== 'undefined') {
+                pianoSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.02, decay: 0.3, sustain: 0.1, release: 1 }
+                }).toDestination();
+                pianoSynth.volume.value = -10;
+
+                violinSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: 'sawtooth' },
+                    envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 }
+                }).toDestination();
+                violinSynth.volume.value = -35;
+            }
+        }
+
+        async function loadUserData() {
+            try {
+                if (window.firebaseDB && window.firebaseRef && window.firebaseGet) {
+                    const userRef = window.firebaseRef(window.firebaseDB, 'users/' + userId);
+                    const snapshot = await window.firebaseGet(userRef);
+                    
+                    if (snapshot.exists()) {
+                        userData = snapshot.val();
+                        // Migration pour les anciennes données
+                        if (userData.hearts === undefined) userData.hearts = 3;
+                        if (userData.lastHeartReset === undefined) userData.lastHeartReset = '';
+                        if (userData.badgeProgress === undefined) userData.badgeProgress = {};
+                        if (userData.categoryStats === undefined) userData.categoryStats = {};
+                        if (userData.purchasedHearts === undefined) userData.purchasedHearts = 0;
+                    } else {
+                        userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
+                        const newCode = generateRecoveryCode();
+                        userData.recoveryCodeHash = await hashRecoveryCode(newCode);
+                        // Stocker le code en clair SEULEMENT en local
+                        localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+                        await saveUserData();
+                    }
+                    
+                    // Migration : si ancien système (recoveryCode en clair), convertir en hash
+                    if (userData.recoveryCode && !userData.recoveryCodeHash) {
+                        userData.recoveryCodeHash = await hashRecoveryCode(userData.recoveryCode);
+                        localStorage.setItem('recoveryCodePlain_' + userId, userData.recoveryCode);
+                        delete userData.recoveryCode; // Supprimer l'ancien champ
+                        await saveUserData();
+                    }
+                    
+                    // Générer code si manquant (migration)
+                    if (!userData.recoveryCodeHash) {
+                        const newCode = generateRecoveryCode();
+                        userData.recoveryCodeHash = await hashRecoveryCode(newCode);
+                        localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+                        await saveUserData();
+                    }
+                    
+                    previousLevel = getLevelInfo(userData.points).min;
+                    updateUI();
+                    updateHeartsDisplay();
+                }
+            } catch (error) {
+                console.log('Mode local:', error);
+                const localData = localStorage.getItem('userData');
+                if (localData) {
+                    userData = JSON.parse(localData);
+                    if (userData.hearts === undefined) userData.hearts = 3;
+                    if (userData.lastHeartReset === undefined) userData.lastHeartReset = '';
+                    if (userData.badgeProgress === undefined) userData.badgeProgress = {};
+                    if (userData.categoryStats === undefined) userData.categoryStats = {};
+                    if (userData.purchasedHearts === undefined) userData.purchasedHearts = 0;
+                    // Migration : convertir ancien recoveryCode en hash
+                    if (userData.recoveryCode && !userData.recoveryCodeHash) {
+                        userData.recoveryCodeHash = await hashRecoveryCode(userData.recoveryCode);
+                        localStorage.setItem('recoveryCodePlain_' + userId, userData.recoveryCode);
+                        delete userData.recoveryCode;
+                        localStorage.setItem('userData', JSON.stringify(userData));
+                    }
+                    if (!userData.recoveryCodeHash) {
+                        const newCode = generateRecoveryCode();
+                        userData.recoveryCodeHash = await hashRecoveryCode(newCode);
+                        localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+                        localStorage.setItem('userData', JSON.stringify(userData));
+                    }
+                } else {
+                    userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
+                    const newCode = generateRecoveryCode();
+                    userData.recoveryCodeHash = await hashRecoveryCode(newCode);
+                    localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+                }
+                updateUI();
+                updateHeartsDisplay();
+            }
+        }
+
+        async function updateLeaderboard() {
+            try {
+                if (window.firebaseDB && window.firebaseRef && window.firebaseSet) {
+                    // Copier seulement les données publiques vers /leaderboard/
+                    const leaderboardData = {
+                        name: userData.name,
+                        points: userData.points,
+                        coins: userData.coins,
+                        correctAnswers: userData.correctAnswers || 0,
+                        totalAnswers: userData.totalAnswers || 0,
+                        totalBadges: getTotalBadgesEarned() // Ajouter nombre de badges
+                    };
+                    const leaderboardRef = window.firebaseRef(window.firebaseDB, 'leaderboard/' + userId);
+                    await window.firebaseSet(leaderboardRef, leaderboardData);
+                }
+            } catch (error) {
+                console.log('Erreur mise à jour leaderboard:', error);
+            }
+        }
+
+        async function saveUserData() {
+            // ===== SYSTÈME ANTI-TRICHE =====
+            // Valeurs max réalistes par partie
+            const maxPointsPerGame = 120; // 5 pts × 10 Q + 2 bonus × 10 + 50 perfect
+            const maxCoinsPerGame = 250; // 10 jetons × 10 Q + 5 bonus × 10 + 100 perfect
+            
+            // Vérifier si les valeurs sont suspectes (marge de sécurité × 1.5)
+            const totalGames = userData.totalGames || 1; // Au moins 1 pour éviter division par 0
+            const maxPointsTheoriques = maxPointsPerGame * totalGames * 1.5;
+            const maxCoinsTheoriques = maxCoinsPerGame * totalGames * 1.5;
+            
+            if (userData.points > maxPointsTheoriques) {
+                console.warn('⚠️ Points suspects détectés - Réinitialisation');
+                userData.points = Math.floor(maxPointsPerGame * totalGames);
+            }
+            
+            if (userData.coins > maxCoinsTheoriques) {
+                console.warn('⚠️ Jetons suspects détectés - Réinitialisation');
+                userData.coins = Math.floor(maxCoinsPerGame * totalGames);
+            }
+            // ===== FIN ANTI-TRICHE =====
+            
+            // TOUJOURS sauvegarder en local D'ABORD (même si Firebase marche)
+            localStorage.setItem('userData', JSON.stringify(userData));
+            
+            // PUIS essayer Firebase si online
+            if (isOnline && window.firebaseDB && window.firebaseRef && window.firebaseSet) {
+                try {
+                    const userRef = window.firebaseRef(window.firebaseDB, 'users/' + userId);
+                    await window.firebaseSet(userRef, userData);
+                    // Mettre à jour le leaderboard automatiquement
+                    await updateLeaderboard();
+                    // Sync réussie !
+                    needsSync = false;
+                    localStorage.setItem('needsSync', 'false');
+                    updateSyncBadge();
+                } catch (error) {
+                    console.log('Firebase échoué, marqué pour sync:', error);
+                    // Marquer pour sync plus tard
+                    needsSync = true;
+                    localStorage.setItem('needsSync', 'true');
+                    updateSyncBadge();
+                }
+            } else {
+                // Pas de connexion ou Firebase indisponible
+                needsSync = true;
+                localStorage.setItem('needsSync', 'true');
+                updateSyncBadge();
+            }
+        }
+
+        function updateSyncBadge() {
+            // Mettre à jour le badge de sync dans le menu
+            const syncBadge = document.getElementById('syncBadge');
+            if (syncBadge) {
+                syncBadge.style.display = needsSync ? 'inline-block' : 'none';
+            }
+        }
+
+        async function syncPendingData() {
+            // Synchroniser les données en attente
+            if (!needsSync) return;
+            
+            console.log('Tentative de synchronisation...');
+            await saveUserData(); // Ré-essayer de sauvegarder
+        }
+
+        function updateUI() {
+            const level = getLevelInfo(userData.points);
+            const displayText = level.medal + ' ' + level.name;
+            
+            document.getElementById('profileName').textContent = userData.name;
+            document.getElementById('profileAvatar').textContent = userData.name.charAt(0).toUpperCase();
+            document.getElementById('profileLevel').textContent = displayText;
+            document.getElementById('userPoints').textContent = userData.points;
+            document.getElementById('userCoins').textContent = userData.coins;
+            
+            const accuracy = userData.totalAnswers > 0 
+                ? Math.round((userData.correctAnswers / userData.totalAnswers) * 100) 
+                : 0;
+            document.getElementById('userAccuracy').textContent = accuracy + '%';
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !pianoSynth) return;
+            
+            Tone.start();
+            if (type === 'correct') {
+                pianoSynth.triggerAttackRelease(['C5', 'E5', 'G5'], '8n');
+            } else if (type === 'incorrect') {
+                pianoSynth.triggerAttackRelease(['F3', 'Ab3'], '4n');
+            }
+        }
+
+        function playCelebration() {
+            if (!musicEnabled || !pianoSynth) return;
+            
+            Tone.start();
+            const now = Tone.now();
+            pianoSynth.triggerAttackRelease('C5', '8n', now);
+            pianoSynth.triggerAttackRelease('E5', '8n', now + 0.1);
+            pianoSynth.triggerAttackRelease('G5', '8n', now + 0.2);
+            pianoSynth.triggerAttackRelease('C6', '4n', now + 0.3);
+        }
+
+        function vibrate(pattern) {
+            if (vibrationEnabled && navigator.vibrate) {
+                navigator.vibrate(pattern);
+            }
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = ['#fbbf24', '#3b82f6', '#ef4444', '#10b981'][Math.floor(Math.random() * 4)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        // Gestion des cœurs
+        function checkAndResetHearts() {
+            const today = new Date().toDateString();
+            if (userData.lastHeartReset !== today) {
+                // Ajouter 3 cœurs gratuits aux cœurs achetés existants
+                const purchased = userData.purchasedHearts || 0;
+                userData.hearts = 3 + purchased;
+                userData.lastHeartReset = today;
+                saveUserData();
+                updateHeartsDisplay();
+            }
+        }
+
+        function updateHeartsDisplay() {
+            const hearts = userData.hearts || 0;
+            const heartsHTML = '❤️'.repeat(Math.min(hearts, 3)) + '🖤'.repeat(Math.max(0, 3 - hearts));
+            
+            const heartsDisplayEl = document.getElementById('heartsDisplay');
+            if (heartsDisplayEl) {
+                heartsDisplayEl.innerHTML = `
+                    <span>${heartsHTML}</span>
+                    <span style="margin-left: 8px; font-size: 22px;" title="Boutique">🛒</span>
+                    <div class="hearts-count" id="heartsCount">(${hearts} ${hearts > 1 ? 'vies' : 'vie'})</div>
+                `;
+            }
+            
+            const quizHeartsEl = document.getElementById('quizHearts');
+            if (quizHeartsEl && document.querySelector('.quiz-screen').classList.contains('active')) {
+                quizHeartsEl.innerHTML = `
+                    ${heartsHTML}
+                    <span style="font-size: 12px; color: var(--text-secondary); margin-left: 5px;">(${hearts})</span>
+                `;
+            }
+        }
+
+        function loseHeart() {
+            if (userData.hearts > 0) {
+                userData.hearts--;
+                
+                // Si on perd un cœur au-dessus de 3, c'est un cœur acheté
+                if (userData.purchasedHearts > 0 && userData.hearts >= 3) {
+                    userData.purchasedHearts--;
+                }
+                
+                // PROTECTION : Ne jamais aller en négatif
+                if (userData.hearts < 0) userData.hearts = 0;
+                if (userData.purchasedHearts < 0) userData.purchasedHearts = 0;
+                
+                updateHeartsDisplay();
+                saveUserData();
+                
+                if (userData.hearts === 0) {
+                    showNoHeartsModal();
+                }
+            }
+        }
+
+        function showNoHeartsModal() {
+            clearInterval(timerInterval);
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'no-hearts-overlay';
+            overlay.innerHTML = `
+                <div class="no-hearts-card">
+                    <div class="no-hearts-icon">💔</div>
+                    <div class="no-hearts-title">Plus de vies !</div>
+                    <div class="no-hearts-message">
+                        Tu as perdu toutes tes vies. Achète des cœurs pour continuer à jouer !
+                    </div>
+                    <button class="btn btn-primary" onclick="goToHeartsShop()">❤️ Acheter des vies</button>
+                    <button class="btn btn-secondary" onclick="quitQuizNoHearts()" style="margin-top: 10px;">🏠 Retour au menu</button>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+        }
+
+        function showHeartsShopModal() {
+            const shopHeartsEl = document.getElementById('shopHeartsCount');
+            const shopCoinsEl = document.getElementById('shopCoinsCount');
+            if (shopHeartsEl) shopHeartsEl.textContent = userData.hearts || 0;
+            if (shopCoinsEl) shopCoinsEl.textContent = userData.coins || 0;
+            
+            document.getElementById('heartsShopModal').classList.add('active');
+        }
+
+        function closeHeartsShopModal() {
+            document.getElementById('heartsShopModal').classList.remove('active');
+            
+            // Si on était en pause quiz, reprendre
+            if (quizPaused && fromShop) {
+                fromShop = false;
+                resumeQuiz();
+            }
+        }
+
+        function openShopFromQuiz() {
+            pauseQuiz();
+            fromShop = true;
+            showHeartsShopModal();
+        }
+
+        function showPrecisionDetails() {
+            const correct = userData.correctAnswers || 0;
+            const total = userData.totalAnswers || 0;
+            const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
+            
+            document.getElementById('precisionCorrect').textContent = correct;
+            document.getElementById('precisionTotal').textContent = total;
+            document.getElementById('precisionPercent').textContent = percent + '%';
+            
+            document.getElementById('precisionModal').classList.add('active');
+        }
+
+        function closePrecisionModal() {
+            document.getElementById('precisionModal').classList.remove('active');
+        }
+
+        function showPointsDetails() {
+            // Points de base
+            document.getElementById('correctCountDetail').textContent = `${correctCount} bonnes réponses × 5 pts`;
+            document.getElementById('basePointsDetail').textContent = `+${sessionPoints} pts`;
+            
+            // Points bonus breakdown
+            let bonusHTML = '';
+            let fastCount = 0;
+            
+            // Compter les réponses rapides (on ne les a pas trackées individuellement, donc approximation)
+            if (sessionBonusPoints > 0) {
+                const perfectBonus = correctCount === currentQuestions.length ? 50 : 0;
+                const speedBonus = sessionBonusPoints - perfectBonus;
+                fastCount = speedBonus / 2;
+                
+                if (fastCount > 0) {
+                    bonusHTML += `
+                        <div class="points-item">
+                            <span>${Math.floor(fastCount)} réponses rapides × 2 pts</span>
+                            <span>+${speedBonus} pts</span>
+                        </div>
+                    `;
+                }
+                
+                if (perfectBonus > 0) {
+                    bonusHTML += `
+                        <div class="points-item">
+                            <span>Quiz parfait 🎉</span>
+                            <span>+${perfectBonus} pts</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            if (!bonusHTML) {
+                bonusHTML = '<div class="points-item"><span>Aucun bonus</span><span>+0 pts</span></div>';
+            }
+            
+            document.getElementById('bonusPointsBreakdown').innerHTML = bonusHTML;
+            document.getElementById('totalPointsDetail').textContent = `+${sessionPoints + sessionBonusPoints} pts`;
+            
+            document.getElementById('pointsDetailsModal').classList.add('active');
+        }
+
+        function closePointsDetailsModal() {
+            document.getElementById('pointsDetailsModal').classList.remove('active');
+        }
+
+        function showCoinsDetails() {
+            // Jetons de base
+            const baseCoinsPerQuestion = 5;
+            const coinBonusPerFast = 2;
+            
+            let detailsHTML = '<div class="points-section"><div class="points-section-title">Jetons de Base</div>';
+            detailsHTML += `<div class="points-item"><span>${correctCount} bonnes réponses × ${baseCoinsPerQuestion} 🪙</span><span>+${correctCount * baseCoinsPerQuestion} 🪙</span></div>`;
+            detailsHTML += '</div>';
+            
+            // Calcul approximatif des jetons rapides
+            const perfectCoins = correctCount === currentQuestions.length ? 50 : 0;
+            const totalCoinsWithoutPerfect = sessionCoins - perfectCoins;
+            const baseCoins = correctCount * baseCoinsPerQuestion;
+            const fastCoins = totalCoinsWithoutPerfect - baseCoins;
+            const fastCount = fastCoins / coinBonusPerFast;
+            
+            if (fastCoins > 0 || perfectCoins > 0) {
+                detailsHTML += '<div class="points-section"><div class="points-section-title">Jetons Bonus</div>';
+                
+                if (fastCoins > 0) {
+                    detailsHTML += `<div class="points-item"><span>${Math.floor(fastCount)} réponses rapides × ${coinBonusPerFast} 🪙</span><span>+${fastCoins} 🪙</span></div>`;
+                }
+                
+                if (perfectCoins > 0) {
+                    detailsHTML += `<div class="points-item"><span>Quiz parfait 🎉</span><span>+${perfectCoins} 🪙</span></div>`;
+                }
+                
+                detailsHTML += '</div>';
+            }
+            
+            document.getElementById('coinsDetailsBreakdown').innerHTML = detailsHTML;
+            document.getElementById('totalCoinsDetail').textContent = `+${sessionCoins} 🪙`;
+            document.getElementById('coinsDetailsModal').classList.add('active');
+        }
+
+        function closeCoinsDetailsModal() {
+            document.getElementById('coinsDetailsModal').classList.remove('active');
+        }
+
+        function goToHeartsShop() {
+            document.querySelector('.no-hearts-overlay')?.remove();
+            showHeartsShopModal();
+        }
+
+        function quitQuizNoHearts() {
+            document.querySelector('.no-hearts-overlay')?.remove();
+            quitQuiz();
+        }
+
+        function showHeartsShop() {
+            hideAllScreens();
+            document.querySelector('.hearts-shop-screen').classList.add('active');
+            const shopHeartsEl = document.getElementById('shopHeartsCount');
+            const shopCoinsEl = document.getElementById('shopCoinsCount');
+            if (shopHeartsEl) shopHeartsEl.textContent = userData.hearts || 0;
+            if (shopCoinsEl) shopCoinsEl.textContent = userData.coins || 0;
+        }
+
+        function buyHearts(amount, price) {
+            if (userData.coins >= price) {
+                userData.coins -= price;
+                userData.hearts = (userData.hearts || 0) + amount;
+                userData.purchasedHearts = (userData.purchasedHearts || 0) + amount;
+                saveUserData();
+                updateUI();
+                updateHeartsDisplay();
+                
+                // Mettre à jour le modal
+                const shopHeartsEl = document.getElementById('shopHeartsCount');
+                const shopCoinsEl = document.getElementById('shopCoinsCount');
+                if (shopHeartsEl) shopHeartsEl.textContent = userData.hearts;
+                if (shopCoinsEl) shopCoinsEl.textContent = userData.coins;
+                
+                vibrate(50);
+                
+                // Message de succès sans fermer le modal
+                setTimeout(() => {
+                    alert(`✅ Tu as acheté ${amount} ${amount > 1 ? 'vies' : 'vie'} !`);
+                }, 100);
+            } else {
+                vibrate([100, 50, 100]);
+                alert(`❌ Pas assez de jetons ! Il te manque ${price - userData.coins} jetons.`);
+            }
+        }
+
+        // Gestion du streak
+        function updateStreak() {
+            const today = new Date().toDateString();
+            const lastPlayed = userData.lastPlayed;
+            
+            if (!lastPlayed) {
+                // Premier jour
+                userData.streak = 1;
+            } else {
+                const lastDate = new Date(lastPlayed);
+                const todayDate = new Date(today);
+                const diffTime = todayDate - lastDate;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === 0) {
+                    // Même jour, ne rien changer
+                    return;
+                } else if (diffDays === 1) {
+                    // Jour consécutif
+                    userData.streak++;
+                } else {
+                    // Streak cassé
+                    userData.streak = 1;
+                }
+            }
+            
+            userData.lastPlayed = today;
+        }
+
+        // Difficulté adaptative
+        function getDifficultyDistribution() {
+            const levelInfo = getLevelInfo(userData.points);
+            const levelName = levelInfo.name.split(' ')[0]; // Prend juste le nom sans les étoiles
+            
+            const distributions = {
+                'Débutant': { 'Facile': 60, 'Moyen': 30, 'Difficile': 10 },
+                'Apprenti': { 'Facile': 40, 'Moyen': 40, 'Difficile': 20 },
+                'Étudiant': { 'Facile': 30, 'Moyen': 50, 'Difficile': 20 },
+                'Savant': { 'Facile': 20, 'Moyen': 50, 'Difficile': 30 },
+                'Expert': { 'Facile': 10, 'Moyen': 40, 'Difficile': 50 },
+                'Maître': { 'Facile': 5, 'Moyen': 35, 'Difficile': 60 },
+                'Légende': { 'Facile': 0, 'Moyen': 30, 'Difficile': 70 }
+            };
+            
+            return distributions[levelName] || distributions['Débutant'];
+        }
+
+        let askedQuestionsIds = JSON.parse(localStorage.getItem('askedQuestionsIds') || '[]');
+
+        function selectQuestionsByDifficulty(questions, count) {
+            if (questions.length === 0) return [];
+            
+            const distribution = getDifficultyDistribution();
+            const selected = [];
+            
+            // Séparer par difficulté (exclure déjà posées)
+            let easy = questions.filter(q => q.difficulty === 'Facile' && !askedQuestionsIds.includes(q.id));
+            let medium = questions.filter(q => q.difficulty === 'Moyen' && !askedQuestionsIds.includes(q.id));
+            let hard = questions.filter(q => q.difficulty === 'Difficile' && !askedQuestionsIds.includes(q.id));
+            
+            // Si TOUTES les questions ont été posées → RESET et recommencer
+            if (easy.length === 0 && medium.length === 0 && hard.length === 0) {
+                askedQuestionsIds = [];
+                localStorage.setItem('askedQuestionsIds', JSON.stringify(askedQuestionsIds));
+                easy = questions.filter(q => q.difficulty === 'Facile');
+                medium = questions.filter(q => q.difficulty === 'Moyen');
+                hard = questions.filter(q => q.difficulty === 'Difficile');
+            }
+            
+            // Calculer nombres de questions par difficulté
+            let numEasy = Math.round(count * distribution['Facile'] / 100);
+            let numMedium = Math.round(count * distribution['Moyen'] / 100);
+            let numHard = count - numEasy - numMedium;
+            
+            // Prendre ce qu'on peut de chaque difficulté
+            const selectedEasy = shuffleArray(easy).slice(0, Math.min(numEasy, easy.length));
+            const selectedMedium = shuffleArray(medium).slice(0, Math.min(numMedium, medium.length));
+            const selectedHard = shuffleArray(hard).slice(0, Math.min(numHard, hard.length));
+            
+            selected.push(...selectedEasy);
+            selected.push(...selectedMedium);
+            selected.push(...selectedHard);
+            
+            // Si pas assez → Compléter avec N'IMPORTE quelle question non sélectionnée
+            while (selected.length < count) {
+                const remaining = questions.filter(q => !selected.some(s => s.id === q.id));
+                if (remaining.length === 0) break; // Plus de questions dispo
+                
+                const randomQuestion = remaining[Math.floor(Math.random() * remaining.length)];
+                selected.push(randomQuestion);
+            }
+            
+            // Ajouter les IDs aux questions posées
+            selected.forEach(q => {
+                if (!askedQuestionsIds.includes(q.id)) {
+                    askedQuestionsIds.push(q.id);
+                }
+            });
+            localStorage.setItem('askedQuestionsIds', JSON.stringify(askedQuestionsIds));
+            
+            return shuffleArray(selected);
+        }
+
+        // Paramètres
+        function loadSettings() {
+            // Mode nuit
+            darkModeEnabled = localStorage.getItem('darkModeEnabled') === 'true';
+            document.getElementById('darkModeToggle').classList.toggle('active', darkModeEnabled);
+            if (darkModeEnabled) {
+                document.body.classList.add('dark-mode');
+            }
+
+            soundEnabled = localStorage.getItem('soundEnabled') === 'true';
+            document.getElementById('soundToggle').classList.toggle('active', soundEnabled);
+
+            vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false';
+            document.getElementById('vibrationToggle').classList.toggle('active', vibrationEnabled);
+
+            timerDuration = parseInt(localStorage.getItem('timerDuration') || '30');
+            document.getElementById('timerDuration').value = timerDuration;
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('soundEnabled', soundEnabled);
+            document.getElementById('soundToggle').classList.toggle('active', soundEnabled);
+        }
+
+        function toggleVibration() {
+            vibrationEnabled = !vibrationEnabled;
+            localStorage.setItem('vibrationEnabled', vibrationEnabled);
+            document.getElementById('vibrationToggle').classList.toggle('active', vibrationEnabled);
+        }
+
+        function toggleDarkMode() {
+            darkModeEnabled = !darkModeEnabled;
+            localStorage.setItem('darkModeEnabled', darkModeEnabled);
+            document.getElementById('darkModeToggle').classList.toggle('active', darkModeEnabled);
+            document.body.classList.toggle('dark-mode', darkModeEnabled);
+        }
+
+        function saveTimerDuration() {
+            timerDuration = parseInt(document.getElementById('timerDuration').value);
+            localStorage.setItem('timerDuration', timerDuration);
+        }
+
+        function changeName() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name || name.length < 2) {
+                alert('Le nom doit contenir au moins 2 caractères');
+                return;
+            }
+            if (name.length > 20) {
+                alert('Le nom ne peut pas dépasser 20 caractères');
+                return;
+            }
+            userData.name = name;
+            saveUserData();
+            updateUI();
+            document.getElementById('nameInput').value = '';
+            alert('Nom changé avec succès ! ✅');
+        }
+
+        function resetData() {
+            if (confirm('Voulez-vous vraiment réinitialiser toutes vos données ?')) {
+                userData = {
+                    name: 'Érudit' + Math.floor(Math.random() * 9000 + 1000),
+                    points: 0,
+                    coins: 0,
+                    hearts: 3,
+                    purchasedHearts: 0,
+                    lastHeartReset: '',
+                    totalGames: 0,
+                    correctAnswers: 0,
+                    totalAnswers: 0,
+                    streak: 0,
+                    lastPlayed: '',
+                    level: 1,
+                    perfectGames: 0,
+                    badges: {},
+                    badgeProgress: {},
+                    categoryStats: {},
+                    dailyChallengeCompleted: false,
+                    lastChallengeDate: '',
+                    recoveryCode: generateRecoveryCode()
+                };
+                askedQuestionsIds = [];
+                saveUserData();
+                updateUI();
+                updateHeartsDisplay();
+                alert('Données réinitialisées ! 🔄');
+            }
+        }
+
+        function copyRecoveryCode() {
+            const plainCode = localStorage.getItem('recoveryCodePlain_' + userId);
+            const code = plainCode || '****-****-****-****';
+            const input = document.getElementById('recoveryCodeDisplay');
+            
+            if (!plainCode) {
+                alert('❌ Code de récupération introuvable. Contacte le support.');
+                return;
+            }
+            
+            // Méthode 1 : Select + copy (marche mieux sur mobile)
+            try {
+                input.select();
+                input.setSelectionRange(0, 99999); // Pour mobile
+                document.execCommand('copy');
+                alert('✅ Code de récupération copié !');
+                vibrate(50);
+            } catch (err) {
+                // Méthode 2 : Clipboard API (fallback)
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(code).then(() => {
+                        alert('✅ Code de récupération copié !');
+                        vibrate(50);
+                    }).catch(() => {
+                        alert('📋 Ton code : ' + code + '\n\nCopie-le manuellement');
+                    });
+                } else {
+                    alert('📋 Ton code : ' + code + '\n\nCopie-le manuellement');
+                }
+            }
+        }
+
+        function showRestoreModal() {
+            document.getElementById('restoreModal').classList.add('active');
+            document.getElementById('restoreCodeInput').value = '';
+        }
+
+        function closeRestoreModal() {
+            document.getElementById('restoreModal').classList.remove('active');
+        }
+
+        async function restoreAccount() {
+            const code = document.getElementById('restoreCodeInput').value.trim().toUpperCase();
+            
+            if (!code || code.length < 10) {
+                alert('❌ Code invalide. Format: QUIZ-XXXX-XXXX-XXXX');
+                return;
+            }
+
+            try {
+                // Hacher le code entré par l'utilisateur
+                const codeHash = await hashRecoveryCode(code);
+                
+                // Chercher dans Firebase par recoveryCodeHash
+                if (window.firebaseDB && window.firebaseRef && window.firebaseGet) {
+                    const usersRef = window.firebaseRef(window.firebaseDB, 'users');
+                    const snapshot = await window.firebaseGet(usersRef);
+                    
+                    if (snapshot.exists()) {
+                        let foundUser = null;
+                        let foundUserId = null;
+                        
+                        snapshot.forEach((child) => {
+                            const user = child.val();
+                            // Comparer SOIT le hash (nouveaux comptes) SOIT le code en clair (anciens comptes)
+                            if (user.recoveryCodeHash === codeHash || user.recoveryCode === code) {
+                                foundUser = user;
+                                foundUserId = child.key;
+                            }
+                        });
+                        
+                        if (foundUser) {
+                            // Compte trouvé !
+                            userId = foundUserId;
+                            userData = foundUser;
+                            localStorage.setItem('quizUserId', userId);
+                            localStorage.setItem('userData', JSON.stringify(userData));
+                            // Sauvegarder le code en clair dans localStorage pour ce compte
+                            localStorage.setItem('recoveryCodePlain_' + userId, code);
+                            
+                            closeRestoreModal();
+                            updateUI();
+                            updateHeartsDisplay();
+                            alert('✅ Compte restauré avec succès ! Bienvenue ' + userData.name + ' !');
+                            showMenu();
+                        } else {
+                            alert('❌ Code introuvable. Vérifie ton code de sauvegarde.');
+                        }
+                    } else {
+                        alert('❌ Aucun compte trouvé.');
+                    }
+                } else {
+                    alert('❌ Connexion Firebase requise pour restaurer un compte.');
+                }
+            } catch (error) {
+                console.error('Erreur restauration:', error);
+                alert('❌ Erreur lors de la restauration. Réessaie plus tard.');
+            }
+        }
+
+        function showSettings() {
+            fromSettings = document.querySelector('.quiz-screen').classList.contains('active');
+            
+            // Détecter d'où on vient
+            if (document.querySelector('.profile-screen').classList.contains('active')) {
+                returnToScreen = 'profile';
+            } else if (document.querySelector('.leaderboard-screen').classList.contains('active')) {
+                returnToScreen = 'leaderboard';
+            } else if (document.querySelector('.levels-screen').classList.contains('active')) {
+                returnToScreen = 'levels';
+            } else if (document.querySelector('.daily-challenge-screen').classList.contains('active')) {
+                returnToScreen = 'daily-challenge';
+            } else if (document.querySelector('.category-screen').classList.contains('active')) {
+                returnToScreen = 'category';
+            } else if (document.querySelector('.result-screen').classList.contains('active')) {
+                returnToScreen = 'result';
+            } else {
+                returnToScreen = 'menu';
+            }
+            
+            if (fromSettings) {
+                pauseQuiz();
+            }
+            hideAllScreens();
+            document.querySelector('.settings-screen').classList.add('active');
+        }
+
+        function showSettingsFromPause() {
+            hideAllScreens();
+            document.querySelector('.settings-screen').classList.add('active');
+            fromSettings = true;
+            returnToScreen = 'pause';
+        }
+
+        function closeSettings() {
+            hideAllScreens();
+            if (returnToScreen === 'pause') {
+                document.querySelector('.pause-screen').classList.add('active');
+            } else if (returnToScreen === 'leaderboard') {
+                document.querySelector('.leaderboard-screen').classList.add('active');
+            } else if (returnToScreen === 'profile') {
+                document.querySelector('.profile-screen').classList.add('active');
+            } else if (returnToScreen === 'levels') {
+                document.querySelector('.levels-screen').classList.add('active');
+            } else if (returnToScreen === 'daily-challenge') {
+                document.querySelector('.daily-challenge-screen').classList.add('active');
+            } else if (returnToScreen === 'category') {
+                document.querySelector('.category-screen').classList.add('active');
+            } else if (returnToScreen === 'result') {
+                document.querySelector('.result-screen').classList.add('active');
+            } else {
+                showMenu();
+            }
+        }
+
+        // Navigation
+        function closeWelcome() {
+            hideAllScreens();
+            showMenu();
+        }
+
+        function showMenu() {
+            hideAllScreens();
+            document.querySelector('.menu-screen').classList.add('active');
+            document.getElementById('settingsIcon').style.display = 'block';
+            updateUI();
+            updateHeartsDisplay();
+        }
+
+        function showProfile() {
+            hideAllScreens();
+            document.querySelector('.profile-screen').classList.add('active');
+            updateProfileScreen();
+        }
+
+        function updateProfileScreen() {
+            const level = getLevelInfo(userData.points);
+            const nextLevel = LEVELS.find(l => l.min > userData.points) || LEVELS[LEVELS.length - 1];
+            const progress = ((userData.points - level.min) / (level.max - level.min)) * 100;
+            
+            document.getElementById('profileAvatarModal').textContent = userData.name.charAt(0).toUpperCase();
+            document.getElementById('profileNameModal').textContent = userData.name;
+            document.getElementById('profileLevelModal').textContent = level.medal + ' ' + level.name;
+            document.getElementById('levelProgressFill').style.width = progress + '%';
+            document.getElementById('currentLevelPoints').textContent = level.min + ' pts';
+            document.getElementById('nextLevelPoints').textContent = level.max + ' pts';
+            document.getElementById('nextLevelName').textContent = nextLevel.medal + ' ' + nextLevel.name;
+            document.getElementById('pointsToNext').textContent = 'Encore ' + (nextLevel.min - userData.points) + ' points !';
+            
+            document.getElementById('totalGamesProfile').textContent = userData.totalGames;
+            document.getElementById('correctAnswersProfile').textContent = userData.correctAnswers;
+            document.getElementById('wrongAnswersProfile').textContent = (userData.totalAnswers - userData.correctAnswers);
+            
+            const accuracy = userData.totalAnswers > 0 ? Math.round((userData.correctAnswers / userData.totalAnswers) * 100) : 0;
+            document.getElementById('accuracyProfile').textContent = accuracy + '%';
+            document.getElementById('streakProfile').textContent = userData.streak + ' jours 🔥';
+            document.getElementById('coinsProfile').textContent = userData.coins + ' 🪙';
+            
+            const totalBadges = getTotalBadgesEarned();
+            document.getElementById('totalBadgesCount').textContent = totalBadges;
+            
+            // Afficher le code de récupération depuis localStorage
+            const recoveryCodeEl = document.getElementById('recoveryCodeDisplay');
+            if (recoveryCodeEl) {
+                const plainCode = localStorage.getItem('recoveryCodePlain_' + userId);
+                recoveryCodeEl.value = plainCode || '****-****-****-****';
+            }
+            
+            updateBadgesDisplay();
+        }
+
+        function updateBadgesDisplay() {
+            const grid = document.getElementById('badgesGrid');
+            grid.innerHTML = '';
+            
+            BADGES.forEach(badge => {
+                const levelInfo = getBadgeLevel(badge.id);
+                const isUnlocked = levelInfo.current > 0;
+                const currentLevelIndex = Math.min(levelInfo.current, badge.levels.length) - 1;
+                
+                const progressPercent = levelInfo.current < badge.levels.length 
+                    ? (levelInfo.progress / levelInfo.nextTarget) * 100 
+                    : 100;
+                
+                const div = document.createElement('div');
+                div.className = 'badge-container ' + (isUnlocked ? 'unlocked' : 'locked');
+                
+                const description = isUnlocked 
+                    ? badge.descriptions[currentLevelIndex] 
+                    : badge.descriptions[0];
+                
+                const progressText = levelInfo.current < badge.levels.length
+                    ? `${levelInfo.progress}/${levelInfo.nextTarget}`
+                    : 'MAX';
+                
+                div.innerHTML = `
+                    <div class="badge-icon">${isUnlocked ? badge.icon : '🔒'}</div>
+                    <div class="badge-name">${badge.name} ${levelInfo.current > 0 ? `(${levelInfo.current}/${badge.levels.length})` : ''}</div>
+                    <div class="badge-progress">${description}</div>
+                    <div class="badge-progress" style="margin-top: 4px; font-weight: 600; color: #3b82f6;">${progressText}</div>
+                    <div class="progress-mini">
+                        <div class="progress-mini-bar" style="width: ${progressPercent}%"></div>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function showLevels() {
+            hideAllScreens();
+            document.querySelector('.levels-screen').classList.add('active');
+            updateLevelsDisplay();
+        }
+
+        function updateLevelsDisplay() {
+            const list = document.getElementById('levelsList');
+            const currentLevel = getLevelInfo(userData.points);
+            
+            list.innerHTML = LEVELS.map(level => {
+                const isCurrent = level.min === currentLevel.min;
+                return `
+                    <div class="level-item ${isCurrent ? 'current' : ''}">
+                        <div class="level-medal">${level.medal}</div>
+                        <div class="level-details">
+                            <div class="level-name">${level.name}</div>
+                            <div class="level-range">${level.min} - ${level.max} points</div>
+                        </div>
+                        ${isCurrent ? '<span style="color: #3b82f6; font-weight: bold;">← Tu es ici</span>' : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function checkDailyChallenge() {
+            const today = new Date().toDateString();
+            if (userData.lastChallengeDate !== today) {
+                const randomChallenge = DAILY_CHALLENGES[Math.floor(Math.random() * DAILY_CHALLENGES.length)];
+                currentDailyChallenge = randomChallenge;
+                userData.dailyChallengeCompleted = false;
+                document.getElementById('challengeBadge').style.display = 'inline-block';
+            }
+        }
+
+        function showDailyChallenge() {
+            hideAllScreens();
+            document.querySelector('.daily-challenge-screen').classList.add('active');
+            updateDailyChallengeDisplay();
+        }
+
+        function updateDailyChallengeDisplay() {
+            const card = document.getElementById('dailyChallengeCard');
+            if (!currentDailyChallenge || userData.dailyChallengeCompleted) {
+                card.innerHTML = `
+                    <div class="challenge-icon">✅</div>
+                    <div class="challenge-title">Défi Complété !</div>
+                    <div class="challenge-description">Reviens demain pour un nouveau défi</div>
+                    <button class="btn btn-primary" onclick="showMenu()">Retour au Menu</button>
+                `;
+            } else {
+                const now = new Date();
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(0, 0, 0, 0);
+                const timeLeft = tomorrow - now;
+                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                card.innerHTML = `
+                    <div class="challenge-icon">⚡</div>
+                    <div class="challenge-title">${currentDailyChallenge.title}</div>
+                    <div class="challenge-description">${currentDailyChallenge.description}</div>
+                    <div class="challenge-reward">
+                        <strong>Récompense :</strong> ${currentDailyChallenge.reward} 🪙
+                    </div>
+                    <div class="challenge-timer">⏱️ ${hours}h ${minutes}min ${seconds}s restantes</div>
+                    <button class="btn btn-primary" onclick="startDailyQuiz()">Relever le Défi 🚀</button>
+                    <button class="btn btn-secondary" onclick="showMenu()" style="margin-top: 10px;">Retour</button>
+                `;
+            }
+        }
+
+        function startDailyQuiz() {
+            challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 };
+            startQuiz('all', 'Défi Quotidien', 'mixte');
+        }
+
+        function showCategories() {
+            hideAllScreens();
+            document.querySelector('.category-screen').classList.add('active');
+            populateCategories();
+        }
+
+        async function showLeaderboard() {
+            // Détecter d'où on vient
+            if (document.querySelector('.result-screen').classList.contains('active')) {
+                returnToScreen = 'result';
+            } else if (document.querySelector('.profile-screen').classList.contains('active')) {
+                returnToScreen = 'profile';
+            } else {
+                returnToScreen = 'menu';
+            }
+            hideAllScreens();
+            document.querySelector('.leaderboard-screen').classList.add('active');
+            await loadLeaderboard();
+        }
+
+        function goBackFromLeaderboard() {
+            hideAllScreens();
+            if (returnToScreen === 'result') {
+                document.querySelector('.result-screen').classList.add('active');
+            } else if (returnToScreen === 'profile') {
+                document.querySelector('.profile-screen').classList.add('active');
+            } else {
+                showMenu();
+            }
+        }
+
+        function hideAllScreens() {
+            document.querySelectorAll('.menu-screen, .category-screen, .quiz-screen, .result-screen, .leaderboard-screen, .settings-screen, .welcome-screen, .pause-screen, .profile-screen, .levels-screen, .daily-challenge-screen, .level-up-screen')
+                .forEach(screen => screen.classList.remove('active'));
+        }
+
+        function populateCategories() {
+            const grid = document.getElementById('categoryGrid');
+            grid.innerHTML = `
+                <div class="category-card" data-symbols="🎲 ⚡ 🔥 🎯 ✨" onclick="startQuiz('all', 'Mode Mixte', 'mixte')">
+                    <h3>🎲 Mode Mixte</h3>
+                    <p>Challenge ultime ! Teste toutes tes connaissances ! 🔥</p>
+                </div>
+                <div class="category-card" data-symbols="✍️ 📖 💬 🔤 📝" onclick="startQuiz('Programme scolaire - Communication française', 'Français', 'francais')">
+                    <h3>📝 Français</h3>
+                    <p>Maîtrise la langue de Molière avec élégance ! 📚</p>
+                </div>
+                <div class="category-card" data-symbols="π √ ∑ ∞ ÷ ×" onclick="startQuiz('Programme scolaire - Mathématiques', 'Mathématiques', 'maths')">
+                    <h3>🔢 Mathématiques</h3>
+                    <p>Développe ta logique et deviens un as du calcul ! 🧮</p>
+                </div>
+                <div class="category-card" data-symbols="⚛️ 🔬 🧪 🌡️ ⚡" onclick="startQuiz('Programme scolaire - Sciences', 'Sciences', 'sciences')">
+                    <h3>🔬 Sciences</h3>
+                    <p>Explore les mystères de l'univers ! 🔭</p>
+                </div>
+                <div class="category-card" data-symbols="🗣️ 🇭🇹 💬 🌟" onclick="startQuiz('Programme scolaire - Communication créole', 'Kreyòl', 'creole')">
+                    <h3>🗣️ Kreyòl</h3>
+                    <p>Pale kreyòl ak fyète, ranfòse konesans ou ! 🌟</p>
+                </div>
+                <div class="category-card" data-symbols="🇭🇹 🏛️ 🎭 🥁 🌺" onclick="startQuiz('Culture haïtienne', 'Culture Haïtienne', 'culture-haitienne')">
+                    <h3>🇭🇹 Culture Haïtienne</h3>
+                    <p>Plonge dans la richesse de notre patrimoine ! 🌺</p>
+                </div>
+                <div class="category-card" data-symbols="🌍 🎓 💡 🧠 📚" onclick="startQuiz('Culture générale', 'Culture Générale', 'culture-generale')">
+                    <h3>🌍 Culture Générale</h3>
+                    <p>Élargis tes horizons, deviens cultivé ! 🌟</p>
+                </div>
+            `;
+        }
+
+        async function loadQuestions() {
+            if (allQuestions.length > 0) return true;
+            
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}?key=${GOOGLE_SHEETS_API_KEY}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const rows = data.values.slice(1);
+                allQuestions = rows.map(row => ({
+                    id: row[0],
+                    category: row[1],
+                    question: row[2],
+                    options: [row[3], row[4], row[5], row[6]],
+                    correctAnswer: row[7],
+                    explanation: row[8],
+                    difficulty: row[9] || 'Moyen'
+                }));
+                
+                // Sauvegarder dans le cache
+                localStorage.setItem('questionsCache', JSON.stringify(allQuestions));
+                localStorage.setItem('questionsCacheDate', new Date().toISOString());
+                
+                return true;
+            } catch (error) {
+                console.error('Erreur chargement questions:', error);
+                
+                // Essayer de charger depuis le cache
+                const cachedQuestions = localStorage.getItem('questionsCache');
+                if (cachedQuestions) {
+                    allQuestions = JSON.parse(cachedQuestions);
+                    const cacheDate = localStorage.getItem('questionsCacheDate');
+                    alert('📱 Mode hors ligne activé\nDernière mise à jour: ' + new Date(cacheDate).toLocaleDateString());
+                    return true;
+                }
+                
+                alert('❌ Erreur de connexion et aucun cache disponible.\nVérifiez votre connexion internet.');
+                return false;
+            }
+        }
+
+        async function startQuiz(category, displayName, badgeClass) {
+            // Vérifier les cœurs
+            if (userData.hearts <= 0) {
+                showNoHeartsModal();
+                return;
+            }
+
+            if (!await loadQuestions()) return;
+
+            currentCategory = displayName;
+            currentCategoryKey = category; // STOCKER LA VRAIE CATÉGORIE GOOGLE SHEETS !
+            currentCategoryBadge = badgeClass;
+
+            let filtered = allQuestions;
+            if (category !== 'all') {
+                filtered = allQuestions.filter(q => q.category.includes(category));
+            }
+
+            const numQuestions = Math.min(filtered.length, 10);
+            currentQuestions = selectQuestionsByDifficulty(filtered, numQuestions);
+            
+            // PROTECTION : Vérifier qu'on a bien des questions
+            if (!currentQuestions || currentQuestions.length === 0) {
+                alert('❌ Aucune question disponible pour cette thématique. Réessaie plus tard !');
+                showMenu();
+                return;
+            }
+            
+            currentQuestionIndex = 0;
+            correctCount = 0;
+            sessionPoints = 0;
+            sessionCoins = 0;
+            sessionBonusPoints = 0;
+            pointsBeforeQuiz = userData.points; // Sauvegarder points AVANT le quiz
+            challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 }; // Reset challenge
+
+            hideAllScreens();
+            document.querySelector('.quiz-screen').classList.add('active');
+            document.getElementById('settingsIcon').style.display = 'none';
+            
+            const badge = document.getElementById('categoryBadge');
+            badge.textContent = `📚 ${currentCategory}`;
+            badge.className = `category-badge badge-${badgeClass}`;
+            
+            document.getElementById('totalQ').textContent = numQuestions;
+            
+            updateHeartsDisplay();
+            showQuestion();
+        }
+
+        function showQuestion() {
+            // PROTECTION : Si aucune question disponible
+            if (!currentQuestions || currentQuestions.length === 0) {
+                alert('❌ Aucune question disponible. Retour au menu.');
+                showMenu();
+                return;
+            }
+            
+            if (currentQuestionIndex >= currentQuestions.length) {
+                showResults();
+                return;
+            }
+
+            const question = currentQuestions[currentQuestionIndex];
+            
+            document.getElementById('currentQ').textContent = currentQuestionIndex + 1;
+            document.getElementById('progressBar').style.width = ((currentQuestionIndex + 1) / currentQuestions.length * 100) + '%';
+            document.getElementById('questionText').textContent = question.question;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanationCard').classList.remove('show');
+
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.textContent = option;
+                optionDiv.onclick = () => selectAnswer(index);
+                optionsDiv.appendChild(optionDiv);
+            });
+
+            startTimer();
+        }
+
+        function selectAnswer(selectedIndex) {
+            clearInterval(timerInterval);
+            
+            const question = currentQuestions[currentQuestionIndex];
+            const correctIndex = ['A', 'B', 'C', 'D'].indexOf(question.correctAnswer);
+            const options = document.querySelectorAll('.option');
+            
+            options.forEach(opt => opt.onclick = null);
+            
+            const isCorrect = selectedIndex === correctIndex;
+            if (selectedIndex !== -1) {
+                options[selectedIndex].classList.add(isCorrect ? 'correct' : 'incorrect');
+            }
+            if (!isCorrect || selectedIndex === -1) {
+                options[correctIndex].classList.add('correct');
+            }
+            
+            document.getElementById('explanationText').textContent = question.explanation;
+            document.getElementById('explanationCard').classList.add('show');
+            
+            if (isCorrect) {
+                playSound('correct');
+                vibrate(50);
+                correctCount++;
+                
+                const basePoints = 5;
+                const speedBonus = timeLeft > (timerDuration - 15) ? 2 : 0;
+                sessionPoints += basePoints;
+                sessionBonusPoints += speedBonus;
+                
+                const baseCoins = 5;
+                const coinBonus = timeLeft > (timerDuration - 15) ? 2 : 0;
+                sessionCoins += (baseCoins + coinBonus);
+                
+                if (timeLeft > (timerDuration - 15)) {
+                    challengeProgress.fastAnswers++;
+                }
+            } else {
+                playSound('incorrect');
+                vibrate([100, 50, 100]);
+                
+                // Perdre un cœur
+                loseHeart();
+            }
+            
+            userData.totalAnswers++;
+            if (isCorrect) userData.correctAnswers++;
+            
+            // Tracker stats par catégorie
+            const questionCategory = question.category;
+            if (!userData.categoryStats) userData.categoryStats = {};
+            if (!userData.categoryStats[questionCategory]) {
+                userData.categoryStats[questionCategory] = { correct: 0, total: 0 };
+            }
+            userData.categoryStats[questionCategory].total++;
+            if (isCorrect) userData.categoryStats[questionCategory].correct++;
+            
+            document.getElementById('nextBtn').style.display = 'block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            showQuestion();
+        }
+
+        function startTimer() {
+            timeLeft = timerDuration;
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = timeLeft;
+            timerEl.classList.remove('warning');
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (quizPaused) return;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    vibrate([150, 100, 150]);
+                    selectAnswer(-1);
+                    return;
+                }
+                
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                
+                if (timeLeft === 10) {
+                    timerEl.classList.add('warning');
+                    vibrate(30);
+                }
+                
+                if (timeLeft < 10 && timeLeft > 0) {
+                    vibrate(20);
+                }
+            }, 1000);
+        }
+
+        function pauseQuiz() {
+            quizPaused = true;
+            pausedTime = timeLeft;
+            clearInterval(timerInterval);
+            hideAllScreens();
+            document.querySelector('.pause-screen').classList.add('active');
+        }
+
+        function resumeQuiz() {
+            quizPaused = false;
+            hideAllScreens();
+            document.querySelector('.quiz-screen').classList.add('active');
+            timeLeft = pausedTime;
+            startTimer();
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            correctCount = 0;
+            sessionPoints = 0;
+            sessionCoins = 0;
+            sessionBonusPoints = 0;
+            quizPaused = false;
+            askedQuestionsIds = []; // RESET pour avoir nouvelles questions
+            pointsBeforeQuiz = userData.points; // Sauvegarder points AVANT
+            challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 }; // Reset
+            
+            // Utiliser la VRAIE catégorie Google Sheets stockée !
+            let filtered = allQuestions;
+            if (currentCategoryKey !== 'all') {
+                filtered = allQuestions.filter(q => q.category.includes(currentCategoryKey));
+            }
+            
+            const numQuestions = Math.min(filtered.length, 10);
+            currentQuestions = selectQuestionsByDifficulty(filtered, numQuestions);
+            
+            // PROTECTION : Vérifier qu'on a bien des questions
+            if (!currentQuestions || currentQuestions.length === 0) {
+                alert('❌ Aucune question disponible. Retour au menu.');
+                showMenu();
+                return;
+            }
+            
+            hideAllScreens();
+            document.querySelector('.quiz-screen').classList.add('active');
+            showQuestion();
+        }
+
+        function quitQuiz() {
+            quizPaused = false;
+            clearInterval(timerInterval);
+            showMenu();
+        }
+
+        function changeThemeFromPause() {
+            quizPaused = false;
+            clearInterval(timerInterval);
+            hideAllScreens();
+            document.querySelector('.category-screen').classList.add('active');
+            document.getElementById('settingsIcon').style.display = 'block';
+        }
+
+        function showResults() {
+            clearInterval(timerInterval);
+            
+            // PROTECTION : Si 0 questions, ne rien faire
+            if (!currentQuestions || currentQuestions.length === 0) {
+                alert('❌ Erreur : Aucune question chargée. Retour au menu.');
+                showMenu();
+                return;
+            }
+            
+            const isPerfect = correctCount === currentQuestions.length && currentQuestions.length > 0;
+            challengeProgress.isPerfect = isPerfect;
+            
+            const accuracy = (correctCount / currentQuestions.length) * 100;
+            if (accuracy >= 80) {
+                challengeProgress.highAccuracyGames++;
+            }
+            
+            // Mettre à jour le streak
+            updateStreak();
+            
+            userData.totalGames++;
+            userData.points += sessionPoints + sessionBonusPoints;
+            userData.coins += sessionCoins;
+            
+            if (isPerfect) {
+                const perfectBonus = 50;
+                sessionBonusPoints += perfectBonus;
+                sessionCoins += 50;
+                userData.points += perfectBonus;
+                userData.coins += 50;
+                userData.perfectGames = (userData.perfectGames || 0) + 1;
+            }
+            
+            const newLevel = getLevelInfo(userData.points);
+            const oldLevel = getLevelInfo(previousLevel);
+            
+            if (currentDailyChallenge && currentDailyChallenge.check(challengeProgress)) {
+                userData.dailyChallengeCompleted = true;
+                userData.lastChallengeDate = new Date().toDateString();
+                userData.coins += currentDailyChallenge.reward;
+                sessionCoins += currentDailyChallenge.reward;
+                document.getElementById('challengeBadge').style.display = 'none';
+            }
+            
+            saveUserData();
+            
+            const levelBeforeQuiz = getLevelInfo(pointsBeforeQuiz);
+            const levelAfterQuiz = getLevelInfo(userData.points);
+            
+            if (levelAfterQuiz.min > levelBeforeQuiz.min) {
+                showLevelUpScreen(levelAfterQuiz);
+            } else {
+                showResultsScreen();
+            }
+        }
+
+        function showLevelUpScreen(newLevel) {
+            hideAllScreens();
+            document.querySelector('.level-up-screen').classList.add('active');
+            document.getElementById('levelUpIcon').textContent = newLevel.medal;
+            document.getElementById('levelUpTitle').textContent = 'Félicitations !';
+            
+            const messages = [
+                'Tu es maintenant ' + newLevel.name + ' !',
+                'Incroyable ! Bienvenue parmi les ' + newLevel.name + 's !',
+                'Magistral ! Tu es désormais ' + newLevel.name + ' !',
+                'Bravo ! Tu as atteint le niveau ' + newLevel.name + ' !'
+            ];
+            document.getElementById('levelUpMessage').textContent = messages[Math.floor(Math.random() * messages.length)];
+            
+            playCelebration();
+            vibrate([100, 50, 100, 50, 100, 50, 100]);
+            createConfetti();
+            
+            previousLevel = newLevel.min;
+        }
+
+        function closeLevelUp() {
+            showResultsScreen();
+        }
+
+        function showResultsScreen() {
+            hideAllScreens();
+            document.querySelector('.result-screen').classList.add('active');
+            document.getElementById('settingsIcon').style.display = 'block';
+            
+            const percentage = (correctCount / currentQuestions.length) * 100;
+            let icon = '🎉';
+            let message = 'Excellent travail !';
+            if (percentage < 50) {
+                icon = '💪';
+                message = 'Continue à t\'entraîner !';
+            } else if (percentage < 80) {
+                icon = '👍';
+                message = 'Bon travail !';
+            }
+            
+            const level = getLevelInfo(userData.points);
+            
+            document.getElementById('resultIcon').textContent = icon;
+            document.getElementById('finalPoints').textContent = userData.points;
+            document.getElementById('resultText').textContent = message;
+            document.getElementById('correctAnswers').textContent = `${correctCount}/${currentQuestions.length}`;
+            document.getElementById('pointsGained').textContent = '+' + sessionPoints;
+            document.getElementById('bonusPoints').textContent = '+' + sessionBonusPoints + ' (bonus)';
+            document.getElementById('coinsGained').textContent = '+' + sessionCoins;
+            document.getElementById('newLevel').textContent = level.medal + ' ' + level.name;
+        }
+
+        async function loadLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            const yourRankSection = document.getElementById('yourRankSection');
+            list.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">Chargement...</div>';
+            
+            try {
+                if (!window.firebaseDB) {
+                    throw new Error('Firebase non disponible');
+                }
+                
+                // Lire depuis /leaderboard/ au lieu de /users/ pour la sécurité
+                const leaderboardRef = window.firebaseRef(window.firebaseDB, 'leaderboard');
+                const snapshot = await window.firebaseGet(leaderboardRef);
+                
+                if (!snapshot.exists()) {
+                    // Leaderboard vide → Ajouter l'utilisateur actuel
+                    await updateLeaderboard();
+                    list.innerHTML = `
+                        <div class="leaderboard-item you">
+                            <div class="rank gold">1</div>
+                            <div class="player-info">
+                                <div class="player-name">${getLevelInfo(userData.points).medal} ${userData.name} (Toi)</div>
+                                <div class="player-stats">${userData.points} pts • ${userData.coins} 🪙</div>
+                            </div>
+                        </div>
+                    `;
+                    yourRankSection.style.display = 'none';
+                    return;
+                }
+                
+                const users = [];
+                snapshot.forEach((child) => {
+                    const user = child.val();
+                    users.push({ ...user, id: child.key });
+                });
+                
+                users.sort((a, b) => b.points - a.points);
+                
+                const top10 = users.slice(0, 10);
+                const yourRank = users.findIndex(u => u.id === userId) + 1;
+                
+                list.innerHTML = top10.map((user, index) => {
+                    const level = getLevelInfo(user.points);
+                    const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                    const isYou = user.id === userId;
+                    return `
+                        <div class="leaderboard-item ${isYou ? 'you' : ''}" onclick="showPlayerDetails('${user.id}', '${user.name}', ${user.points}, ${user.correctAnswers || 0}, ${user.totalAnswers || 0})">
+                            <div class="rank ${rankClass}">${index + 1}</div>
+                            <div class="player-info">
+                                <div class="player-name">${level.medal} ${user.name} ${isYou ? '(Toi)' : ''}</div>
+                                <div class="player-stats">${user.points} pts • ${user.coins} 🪙</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                if (yourRank > 10) {
+                    const yourData = users[yourRank - 1];
+                    const pointsToTop10 = top10[9].points - yourData.points + 1;
+                    yourRankSection.style.display = 'block';
+                    document.getElementById('yourRankInfo').textContent = `#${yourRank} - ${yourData.name}`;
+                    document.getElementById('yourRankStats').textContent = `${yourData.points} pts • ${yourData.coins} 🪙`;
+                    document.getElementById('yourRankMessage').textContent = `↑ Continue ! Plus que ${pointsToTop10} pts pour le Top 10 !`;
+                } else {
+                    yourRankSection.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Erreur classement:', error);
+                list.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">❌ Connexion requise pour voir le classement global</div>';
+            }
+        }
+
+        function showPlayerDetails(playerId, playerName, points, correct, total) {
+            const level = getLevelInfo(points);
+            const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+            
+            // Si c'est l'utilisateur actuel, utiliser les vraies données
+            let badgesCount = 0;
+            if (playerId === userId) {
+                badgesCount = getTotalBadgesEarned();
+            } else {
+                // Pour les autres joueurs, estimation approximative
+                if (points >= 500) badgesCount++;
+                if (points >= 1000) badgesCount++;
+                if (correct >= 50) badgesCount++;
+                if (correct >= 100) badgesCount++;
+            }
+            
+            document.getElementById('detailsAvatar').textContent = playerName.charAt(0).toUpperCase();
+            document.getElementById('detailsName').textContent = playerName;
+            document.getElementById('detailsLevel').textContent = level.medal + ' ' + level.name;
+            document.getElementById('detailsPoints').textContent = points;
+            document.getElementById('detailsAccuracy').textContent = accuracy + '%';
+            document.getElementById('detailsBadges').textContent = badgesCount + ' 🏅';
+            
+            document.querySelector('.player-details-modal').classList.add('active');
+        }
+
+        function closePlayerDetails() {
+            document.querySelector('.player-details-modal').classList.remove('active');
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+    </script>
+    <!-- Precision Details Modal -->
+    <div class="precision-modal" id="precisionModal">
+        <div class="modal-overlay" onclick="closePrecisionModal()">
+            <div class="precision-modal-card" onclick="event.stopPropagation()">
+                <div class="precision-modal-title">📊 Précision</div>
+                <div class="precision-detail">
+                    <strong id="precisionCorrect">0</strong> bonnes réponses<br>
+                    sur <strong id="precisionTotal">0</strong> questions
+                </div>
+                <div style="font-size: 32px; font-weight: bold; color: #3b82f6; margin: 20px 0;">
+                    <span id="precisionPercent">0%</span>
+                </div>
+                <button class="btn btn-primary" onclick="closePrecisionModal()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Points Details Modal -->
+    <div class="points-details-modal" id="pointsDetailsModal">
+        <div class="modal-overlay" onclick="closePointsDetailsModal()">
+            <div class="points-details-card" onclick="event.stopPropagation()">
+                <div class="points-details-title">💰 Détail des Points</div>
+                
+                <div class="points-section">
+                    <div class="points-section-title">Points de Base</div>
+                    <div class="points-item">
+                        <span id="correctCountDetail">0</span>
+                        <span id="basePointsDetail">+0 pts</span>
+                    </div>
+                </div>
+
+                <div class="points-section">
+                    <div class="points-section-title">Points Bonus</div>
+                    <div id="bonusPointsBreakdown"></div>
+                </div>
+
+                <div class="points-total">
+                    TOTAL : <span id="totalPointsDetail">+0 pts</span>
+                </div>
+
+                <button class="btn btn-primary" onclick="closePointsDetailsModal()" style="margin-top: 20px;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coins Details Modal -->
+    <div class="points-details-modal" id="coinsDetailsModal">
+        <div class="modal-overlay" onclick="closeCoinsDetailsModal()">
+            <div class="points-details-card" onclick="event.stopPropagation()">
+                <div class="points-details-title">🪙 Détail des Jetons</div>
+                
+                <div id="coinsDetailsBreakdown"></div>
+
+                <div class="points-total">
+                    TOTAL : <span id="totalCoinsDetail">+0 🪙</span>
+                </div>
+
+                <button class="btn btn-primary" onclick="closeCoinsDetailsModal()" style="margin-top: 20px;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hearts Shop Modal -->
+    <div class="hearts-shop-modal" id="heartsShopModal">
+        <div class="modal-overlay" onclick="closeHeartsShopModal()">
+            <div class="hearts-shop-modal-card" onclick="event.stopPropagation()">
+                <div class="hearts-shop-card">
+                    <div class="shop-hearts-display">❤️</div>
+                    <div class="shop-title">Boutique de Vies</div>
+                    <div class="shop-description">Achète des cœurs pour continuer à jouer !</div>
+                    <div style="margin-bottom: 20px;">
+                        <strong>Vies actuelles :</strong> <span id="shopHeartsCount">3</span> ❤️<br>
+                        <strong>Jetons disponibles :</strong> <span id="shopCoinsCount">0</span> 🪙
+                    </div>
+                </div>
+                <div class="hearts-packs">
+                    <div class="pack-card" onclick="buyHearts(1, 150)">
+                        <div class="pack-hearts">❤️</div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">1 Vie</div>
+                        <div class="pack-price">150 🪙</div>
+                    </div>
+                    <div class="pack-card" onclick="buyHearts(3, 400)">
+                        <div class="pack-hearts">❤️❤️❤️</div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">3 Vies</div>
+                        <div class="pack-price">400 🪙</div>
+                        <div style="font-size: 11px; color: #10b981; margin-top: 5px;">Économise 50 jetons !</div>
+                    </div>
+                    <div class="pack-card" onclick="buyHearts(5, 600)">
+                        <div class="pack-hearts">❤️❤️❤️❤️❤️</div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">5 Vies</div>
+                        <div class="pack-price">600 🪙</div>
+                        <div style="font-size: 11px; color: #10b981; margin-top: 5px;">Économise 150 jetons !</div>
+                    </div>
+                    <div class="pack-card" onclick="buyHearts(10, 1200)">
+                        <div class="pack-hearts">❤️❤️❤️❤️❤️<br>❤️❤️❤️❤️❤️</div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">10 Vies</div>
+                        <div class="pack-price">1200 🪙</div>
+                        <div style="font-size: 11px; color: #10b981; margin-top: 5px;">Économise 300 jetons !</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="closeHeartsShopModal()" style="margin-top: 15px;">← Retour</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restore Account Modal -->
+    <div class="restore-modal" id="restoreModal">
+        <div class="modal-overlay" onclick="closeRestoreModal()">
+            <div class="restore-modal-card" onclick="event.stopPropagation()">
+                <div class="restore-modal-title">🔑 Restaurer mon compte</div>
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; text-align: center;">
+                    Entre ton code de sauvegarde pour récupérer ton compte
+                </div>
+                <input type="text" id="restoreCodeInput" placeholder="QUIZ-XXXX-XXXX-XXXX" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 16px; text-align: center; font-weight: bold; letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase; background: var(--input-bg); color: var(--text-primary);">
+                <button class="btn btn-primary" onclick="restoreAccount()" style="margin-bottom: 10px;">✅ Restaurer</button>
+                <button class="btn btn-secondary" onclick="closeRestoreModal()">❌ Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Details Modal -->
+    <div class="player-details-modal" id="playerDetailsModal">
+        <div class="modal-overlay" onclick="closePlayerDetails()">
+            <div class="player-details-card" onclick="event.stopPropagation()">
+                <div class="player-details-header">
+                    <div class="player-details-avatar" id="detailsAvatar">E</div>
+                    <div class="profile-name" id="detailsName">Joueur</div>
+                    <div class="profile-level" id="detailsLevel">🥉 Débutant</div>
+                </div>
+                <div class="stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Points totaux</span>
+                        <span class="stat-value" id="detailsPoints">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Taux de réussite</span>
+                        <span class="stat-value" id="detailsAccuracy">0%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Badges gagnés</span>
+                        <span class="stat-value" id="detailsBadges">0 🏅</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="closePlayerDetails()" style="margin-top: 20px;">Fermer</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
