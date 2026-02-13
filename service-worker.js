@@ -1,11 +1,11 @@
 // QuizAyiti Service Worker - Version 1.0
 const CACHE_NAME = 'quizayiti-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/quizayiti1.0/',
+  '/quizayiti1.0/index.html',
+  '/quizayiti1.0/manifest.json',
+  '/quizayiti1.0/icon-192.png',
+  '/quizayiti1.0/icon-512.png'
 ];
 
 // Installation du Service Worker
@@ -86,7 +86,7 @@ self.addEventListener('fetch', event => {
           .catch(err => {
             console.log('[Service Worker] Fetch échoué:', err);
             // Retourner une page offline si disponible dans le cache
-            return caches.match('/');
+            return caches.match('/quizayiti1.0/');
           });
       })
   );
