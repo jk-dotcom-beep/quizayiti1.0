@@ -1306,6 +1306,14 @@
             margin-bottom: 15px;
             text-align: center;
         }
+
+        /* Timer régénération cœurs */
+        .hearts-regen-timer {
+            font-size: 13px;
+            color: #10b981;
+            margin-top: 10px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -1690,6 +1698,7 @@
             hearts: 3,
             purchasedHearts: 0,
             lastHeartReset: '',
+            lastHeartRegenTime: '', // NOUVEAU pour régénération 1h
             totalGames: 0,
             correctAnswers: 0,
             totalAnswers: 0,
@@ -1710,6 +1719,7 @@
         let currentQuestionIndex = 0;
         let correctCount = 0;
         let timerInterval;
+        let heartRegenInterval; // NOUVEAU pour timer régénération
         let timeLeft = 30;
         let currentCategory = '';
         let currentCategoryKey = ''; // Vraie catégorie Google Sheets
@@ -1994,6 +2004,7 @@
             checkAndResetHearts();
             initAudio();
             updateSyncBadge();
+            startHeartRegenTimer(); // NOUVEAU démarrer timer régénération
         }
 
         function initAudio() {
@@ -2023,6 +2034,7 @@
                         // Migration pour les anciennes données
                         if (userData.hearts === undefined) userData.hearts = 3;
                         if (userData.lastHeartReset === undefined) userData.lastHeartReset = '';
+                        if (userData.lastHeartRegenTime === undefined) userData.lastHeartRegenTime = ''; // NOUVEAU
                         if (userData.badgeProgress === undefined) userData.badgeProgress = {};
                         if (userData.categoryStats === undefined) userData.categoryStats = {};
                         if (userData.purchasedHearts === undefined) userData.purchasedHearts = 0;
@@ -2030,7 +2042,6 @@
                         userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
                         const newCode = generateRecoveryCode();
                         userData.recoveryCodeHash = await hashRecoveryCode(newCode);
-                        // Stocker le code en clair SEULEMENT en local
                         localStorage.setItem('recoveryCodePlain_' + userId, newCode);
                         await saveUserData();
                     }
@@ -2039,7 +2050,7 @@
                     if (userData.recoveryCode && !userData.recoveryCodeHash) {
                         userData.recoveryCodeHash = await hashRecoveryCode(userData.recoveryCode);
                         localStorage.setItem('recoveryCodePlain_' + userId, userData.recoveryCode);
-                        delete userData.recoveryCode; // Supprimer l'ancien champ
+                        delete userData.recoveryCode;
                         await saveUserData();
                     }
                     
@@ -2062,6 +2073,7 @@
                     userData = JSON.parse(localData);
                     if (userData.hearts === undefined) userData.hearts = 3;
                     if (userData.lastHeartReset === undefined) userData.lastHeartReset = '';
+                    if (userData.lastHeartRegenTime === undefined) userData.lastHeartRegenTime = ''; // NOUVEAU
                     if (userData.badgeProgress === undefined) userData.badgeProgress = {};
                     if (userData.categoryStats === undefined) userData.categoryStats = {};
                     if (userData.purchasedHearts === undefined) userData.purchasedHearts = 0;
@@ -2099,7 +2111,7 @@
                         coins: userData.coins,
                         correctAnswers: userData.correctAnswers || 0,
                         totalAnswers: userData.totalAnswers || 0,
-                        totalBadges: getTotalBadgesEarned() // Ajouter nombre de badges
+                        totalBadges: getTotalBadgesEarned() // CORRECT : vrai compte badges
                     };
                     const leaderboardRef = window.firebaseRef(window.firebaseDB, 'leaderboard/' + userId);
                     await window.firebaseSet(leaderboardRef, leaderboardData);
@@ -2111,9 +2123,9 @@
 
         async function saveUserData() {
             // ===== SYSTÈME ANTI-TRICHE =====
-            // Valeurs max réalistes par partie
+            // CORRIGÉ : Valeurs max réalistes par partie
             const maxPointsPerGame = 120; // 5 pts × 10 Q + 2 bonus × 10 + 50 perfect
-            const maxCoinsPerGame = 250; // 10 jetons × 10 Q + 5 bonus × 10 + 100 perfect
+            const maxCoinsPerGame = 120; // 5 jetons × 10 Q + 2 bonus × 10 + 50 perfect ✅ CORRIGÉ
             
             // Vérifier si les valeurs sont suspectes (marge de sécurité × 1.5)
             const totalGames = userData.totalGames || 1; // Au moins 1 pour éviter division par 0
@@ -2234,16 +2246,77 @@
             }
         }
 
-        // Gestion des cœurs
+        // ===== NOUVELLE GESTION DES CŒURS =====
+        
+        // CORRIGÉ : Régénération 1 cœur/1h (max 3 gratuits)
         function checkAndResetHearts() {
-            const today = new Date().toDateString();
-            if (userData.lastHeartReset !== today) {
-                // Ajouter 3 cœurs gratuits aux cœurs achetés existants
-                const purchased = userData.purchasedHearts || 0;
-                userData.hearts = 3 + purchased;
-                userData.lastHeartReset = today;
+            const now = new Date();
+            const lastRegenTime = userData.lastHeartRegenTime ? new Date(userData.lastHeartRegenTime) : null;
+            
+            // Calculer combien de cœurs gratuits le joueur a
+            const freeHearts = Math.max(0, Math.min(3, userData.hearts - (userData.purchasedHearts || 0)));
+            
+            // Si le joueur a moins de 3 cœurs gratuits
+            if (freeHearts < 3 && lastRegenTime) {
+                const hoursPassed = (now - lastRegenTime) / (1000 * 60 * 60);
+                const heartsToAdd = Math.floor(hoursPassed);
+                
+                if (heartsToAdd > 0) {
+                    const newFreeHearts = Math.min(3, freeHearts + heartsToAdd);
+                    userData.hearts = newFreeHearts + (userData.purchasedHearts || 0);
+                    userData.lastHeartRegenTime = now.toISOString();
+                    saveUserData();
+                    updateHeartsDisplay();
+                }
+            } else if (!lastRegenTime && freeHearts < 3) {
+                // Premier lancement ou migration : initialiser le timer
+                userData.lastHeartRegenTime = now.toISOString();
                 saveUserData();
-                updateHeartsDisplay();
+            }
+            
+            updateHeartsRegenTimer(); // Afficher timer
+        }
+        
+        // NOUVEAU : Timer régénération visible
+        function startHeartRegenTimer() {
+            // Mettre à jour toutes les 1 minute
+            heartRegenInterval = setInterval(() => {
+                checkAndResetHearts();
+                updateHeartsRegenTimer();
+            }, 60000); // 1 minute
+            
+            // Mettre à jour immédiatement
+            updateHeartsRegenTimer();
+        }
+        
+        function updateHeartsRegenTimer() {
+            const timerEl = document.getElementById('heartsRegenTimer');
+            if (!timerEl) return;
+            
+            const freeHearts = Math.max(0, Math.min(3, userData.hearts - (userData.purchasedHearts || 0)));
+            
+            if (freeHearts >= 3) {
+                timerEl.textContent = '✅ Cœurs gratuits au max';
+                timerEl.style.color = '#10b981';
+                return;
+            }
+            
+            const now = new Date();
+            const lastRegenTime = userData.lastHeartRegenTime ? new Date(userData.lastHeartRegenTime) : now;
+            const nextRegenTime = new Date(lastRegenTime.getTime() + 60 * 60 * 1000); // +1h
+            const timeLeft = nextRegenTime - now;
+            
+            if (timeLeft <= 0) {
+                timerEl.textContent = '⏱️ Régénération disponible...';
+                timerEl.style.color = '#10b981';
+                checkAndResetHearts(); // Régénérer immédiatement
+            } else {
+                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                timerEl.textContent = `⏱️ Prochain cœur dans ${hours}h ${minutes}min ${seconds}s`;
+                timerEl.style.color = '#6b7280';
             }
         }
 
@@ -2267,6 +2340,8 @@
                     <span style="font-size: 12px; color: var(--text-secondary); margin-left: 5px;">(${hearts})</span>
                 `;
             }
+            
+            updateHeartsRegenTimer(); // Mettre à jour timer
         }
 
         function loseHeart() {
@@ -2281,6 +2356,12 @@
                 // PROTECTION : Ne jamais aller en négatif
                 if (userData.hearts < 0) userData.hearts = 0;
                 if (userData.purchasedHearts < 0) userData.purchasedHearts = 0;
+                
+                // Démarrer timer de régénération si on passe en-dessous de 3 cœurs gratuits
+                const freeHearts = Math.max(0, Math.min(3, userData.hearts - (userData.purchasedHearts || 0)));
+                if (freeHearts < 3 && !userData.lastHeartRegenTime) {
+                    userData.lastHeartRegenTime = new Date().toISOString();
+                }
                 
                 updateHeartsDisplay();
                 saveUserData();
@@ -2318,6 +2399,7 @@
             if (shopCoinsEl) shopCoinsEl.textContent = userData.coins || 0;
             
             document.getElementById('heartsShopModal').classList.add('active');
+            updateHeartsRegenTimer(); // Afficher timer dans modal
         }
 
         function closeHeartsShopModal() {
@@ -2458,7 +2540,23 @@
             if (shopCoinsEl) shopCoinsEl.textContent = userData.coins || 0;
         }
 
+        // CORRIGÉ : Limite 25 cœurs max
         function buyHearts(amount, price) {
+            // PROTECTION : Vérifier limite 25 cœurs
+            if (userData.hearts >= 25) {
+                vibrate([100, 50, 100]);
+                alert(`❌ Niveau d'achat maximum atteint !\n\nTu as déjà ${userData.hearts} cœurs (limite: 25).`);
+                return;
+            }
+            
+            // Vérifier si l'achat dépasserait 25
+            if (userData.hearts + amount > 25) {
+                const available = 25 - userData.hearts;
+                vibrate([100, 50, 100]);
+                alert(`❌ Tu ne peux acheter que ${available} cœur(s) pour atteindre le maximum de 25.`);
+                return;
+            }
+            
             if (userData.coins >= price) {
                 userData.coins -= price;
                 userData.hearts = (userData.hearts || 0) + amount;
@@ -2657,6 +2755,7 @@
                     hearts: 3,
                     purchasedHearts: 0,
                     lastHeartReset: '',
+                    lastHeartRegenTime: '', // NOUVEAU
                     totalGames: 0,
                     correctAnswers: 0,
                     totalAnswers: 0,
@@ -3232,6 +3331,7 @@
                 sessionPoints += basePoints;
                 sessionBonusPoints += speedBonus;
                 
+                // ✅ DÉJÀ CORRECT : 5 jetons base + 2 bonus
                 const baseCoins = 5;
                 const coinBonus = timeLeft > (timerDuration - 15) ? 2 : 0;
                 sessionCoins += (baseCoins + coinBonus);
@@ -3386,9 +3486,9 @@
             userData.coins += sessionCoins;
             
             if (isPerfect) {
-                const perfectBonus = 50;
+                const perfectBonus = 50; // ✅ CORRECT : 50 points
                 sessionBonusPoints += perfectBonus;
-                sessionCoins += 50;
+                sessionCoins += 50; // ✅ CORRECT : 50 jetons
                 userData.points += perfectBonus;
                 userData.coins += 50;
                 userData.perfectGames = (userData.perfectGames || 0) + 1;
@@ -3516,7 +3616,7 @@
                     const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
                     const isYou = user.id === userId;
                     return `
-                        <div class="leaderboard-item ${isYou ? 'you' : ''}" onclick="showPlayerDetails('${user.id}', '${user.name}', ${user.points}, ${user.correctAnswers || 0}, ${user.totalAnswers || 0})">
+                        <div class="leaderboard-item ${isYou ? 'you' : ''}" onclick="showPlayerDetails('${user.id}', '${user.name}', ${user.points}, ${user.correctAnswers || 0}, ${user.totalAnswers || 0}, ${user.totalBadges || 0})">
                             <div class="rank ${rankClass}">${index + 1}</div>
                             <div class="player-info">
                                 <div class="player-name">${level.medal} ${user.name} ${isYou ? '(Toi)' : ''}</div>
@@ -3543,20 +3643,17 @@
             }
         }
 
-        function showPlayerDetails(playerId, playerName, points, correct, total) {
+        // CORRIGÉ : Afficher vrai nombre de badges pour autres joueurs
+        function showPlayerDetails(playerId, playerName, points, correct, total, totalBadges) {
             const level = getLevelInfo(points);
             const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
             
-            // Si c'est l'utilisateur actuel, utiliser les vraies données
-            let badgesCount = 0;
+            // ✅ CORRECTION : Utiliser totalBadges depuis Firebase
+            let badgesCount = totalBadges || 0;
+            
+            // Si c'est l'utilisateur actuel, utiliser les vraies données locales
             if (playerId === userId) {
                 badgesCount = getTotalBadgesEarned();
-            } else {
-                // Pour les autres joueurs, estimation approximative
-                if (points >= 500) badgesCount++;
-                if (points >= 1000) badgesCount++;
-                if (correct >= 50) badgesCount++;
-                if (correct >= 100) badgesCount++;
             }
             
             document.getElementById('detailsAvatar').textContent = playerName.charAt(0).toUpperCase();
@@ -3656,6 +3753,7 @@
                         <strong>Vies actuelles :</strong> <span id="shopHeartsCount">3</span> ❤️<br>
                         <strong>Jetons disponibles :</strong> <span id="shopCoinsCount">0</span> 🪙
                     </div>
+                    <div class="hearts-regen-timer" id="heartsRegenTimer">⏱️ Chargement...</div>
                 </div>
                 <div class="hearts-packs">
                     <div class="pack-card" onclick="buyHearts(1, 150)">
