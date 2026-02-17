@@ -1,76 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#1e40af;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#ef4444;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#991b1b;stop-opacity:1" />
-    </linearGradient>
-    <filter id="shadow">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
-    </filter>
-  </defs>
-  
-  <!-- Background circle -->
-  <circle cx="256" cy="256" r="240" fill="white" filter="url(#shadow)"/>
-  
-  <!-- Brain shape avec gradient bleu-rouge -->
-  <g transform="translate(256, 220)">
-    <!-- Cerveau stylisé -->
+
+  <!-- Background with rounded corners -->
+  <rect x="0" y="0" width="512" height="512" rx="80" ry="80" fill="white"/>
+
+  <!-- Brain group -->
+  <g transform="translate(256,210)">
+
+    <!-- Top half (blue) -->
     <path d="
-      M -80,-80
-      Q -120,-80 -120,-40
-      Q -120,-20 -110,0
-      Q -120,20 -110,40
-      Q -100,60 -80,70
-      Q -60,80 -40,80
-      Q -20,85 0,85
-      Q 20,85 40,80
-      Q 60,80 80,70
-      Q 100,60 110,40
-      Q 120,20 110,0
-      Q 120,-20 120,-40
-      Q 120,-80 80,-80
-      Q 60,-90 40,-90
-      Q 20,-95 0,-95
-      Q -20,-95 -40,-90
-      Q -60,-90 -80,-80
-      Z
-    " 
-    fill="url(#brainGradient)" 
-    stroke="#1e293b" 
-    stroke-width="3"/>
-    
-    <!-- Details cerveau gauche (bleu) -->
-    <ellipse cx="-60" cy="-30" rx="25" ry="30" fill="#1e40af" opacity="0.3"/>
-    <ellipse cx="-70" cy="10" rx="20" ry="25" fill="#1e40af" opacity="0.3"/>
-    <ellipse cx="-50" cy="40" rx="22" ry="20" fill="#1e40af" opacity="0.3"/>
-    
-    <!-- Details cerveau droit (rouge) -->
-    <ellipse cx="60" cy="-30" rx="25" ry="30" fill="#991b1b" opacity="0.3"/>
-    <ellipse cx="70" cy="10" rx="20" ry="25" fill="#991b1b" opacity="0.3"/>
-    <ellipse cx="50" cy="40" rx="22" ry="20" fill="#991b1b" opacity="0.3"/>
-    
-    <!-- Ligne séparation verticale -->
-    <line x1="0" y1="-90" x2="0" y2="80" stroke="#1e293b" stroke-width="2" stroke-dasharray="5,5" opacity="0.3"/>
+      M -140 0
+      C -160 -80, -80 -150, 0 -150
+      C 80 -150, 160 -80, 140 0
+      Z"
+      fill="#0057B8"/>
+
+    <!-- Bottom half (red) -->
+    <path d="
+      M -140 0
+      C -120 90, -60 130, 0 130
+      C 60 130, 120 90, 140 0
+      Z"
+      fill="#D21034"/>
+
+    <!-- Separation line -->
+    <line x1="-140" y1="0" x2="140" y2="0" stroke="white" stroke-width="6"/>
+
   </g>
-  
-  <!-- Badge "QH" -->
-  <g transform="translate(256, 350)">
-    <rect x="-60" y="-30" width="120" height="60" rx="10" fill="#fbbf24" stroke="#f59e0b" stroke-width="3" filter="url(#shadow)"/>
-    <text x="0" y="12" 
-          font-family="Arial Black, sans-serif" 
-          font-size="42" 
-          font-weight="bold" 
-          fill="#1e293b" 
-          text-anchor="middle">QH</text>
-  </g>
-  
-  <!-- Texte "QuizAyiti" en bas -->
-  <text x="256" y="470" 
-        font-family="Arial, sans-serif" 
-        font-size="32" 
-        font-weight="bold" 
-        fill="#1e293b" 
-        text-anchor="middle">QuizAyiti</text>
+
+  <!-- Golden badge -->
+  <circle cx="256" cy="210" r="85" fill="#D4AF37"/>
+  <circle cx="256" cy="210" r="70" fill="#F4D03F"/>
+
+  <!-- QA letters -->
+  <text x="256" y="230"
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="70"
+        font-weight="bold"
+        fill="#8B6B00">
+    QA
+  </text>
+
+  <!-- App name -->
+  <text x="256" y="430"
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="48"
+        font-weight="600"
+        fill="#1A1A1A">
+    QuizAyiti
+  </text>
+
 </svg>

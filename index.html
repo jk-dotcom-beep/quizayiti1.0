@@ -171,11 +171,11 @@
         }
 
         /* Écrans */
-        .menu-screen, .category-screen, .quiz-screen, .result-screen, .leaderboard-screen, .settings-screen, .welcome-screen, .pause-screen, .profile-screen, .levels-screen, .daily-challenge-screen, .level-up-screen {
+        .menu-screen, .category-screen, .quiz-screen, .result-screen, .leaderboard-screen, .settings-screen, .welcome-screen, .pause-screen, .profile-screen, .levels-screen, .daily-challenge-screen, .friends-screen, .level-up-screen {
             display: none;
         }
 
-        .menu-screen.active, .category-screen.active, .quiz-screen.active, .result-screen.active, .leaderboard-screen.active, .settings-screen.active, .welcome-screen.active, .pause-screen.active, .profile-screen.active, .levels-screen.active, .daily-challenge-screen.active, .level-up-screen.active {
+        .menu-screen.active, .category-screen.active, .quiz-screen.active, .result-screen.active, .leaderboard-screen.active, .settings-screen.active, .welcome-screen.active, .pause-screen.active, .profile-screen.active, .levels-screen.active, .daily-challenge-screen.active, .friends-screen.active, .level-up-screen.active {
             display: block;
         }
 
@@ -1314,6 +1314,116 @@
             margin-top: 10px;
             font-weight: 600;
         }
+
+        /* ========== SYSTÈME AMIS ========== */
+        .friends-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .friends-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .friends-section-header h3 {
+            color: var(--text-primary);
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .friends-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .friend-request-item,
+        .friend-item {
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .friend-name {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .friend-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .btn-small:active {
+            transform: scale(0.95);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+
+        .no-friends {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 30px;
+            font-style: italic;
+        }
+
+        .search-result {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .search-result-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .search-result-points {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -1367,6 +1477,10 @@
                 <button class="btn btn-secondary" id="dailyChallengeBtn" onclick="showDailyChallenge()">
                     ⚡ Défi Quotidien
                     <span class="notification-badge" id="challengeBadge" style="display: none;">NOUVEAU</span>
+                </button>
+                <button class="btn btn-secondary" onclick="showFriendsScreen()">
+                    👥 Amis
+                    <span class="notification-badge" id="friendsBadge" style="display: none;">NOUVEAU</span>
                 </button>
             </div>
 
@@ -1449,6 +1563,34 @@
             <div class="daily-challenge-screen">
                 <button class="back-btn" onclick="showMenu()">← Retour</button>
                 <div class="daily-challenge-card" id="dailyChallengeCard"></div>
+            </div>
+
+            <!-- Écran Amis -->
+            <div class="friends-screen">
+                <button class="back-btn" onclick="showMenu()">← Retour</button>
+                <h2 style="margin-bottom: 20px; color: var(--text-primary); font-size: 20px; text-align: center;">👥 Mes Amis</h2>
+                
+                <button class="btn btn-primary" onclick="showSearchFriendModal()" style="margin-bottom: 20px;">
+                    🔍 Rechercher un ami
+                </button>
+                
+                <div class="friends-sections">
+                    <!-- Demandes reçues -->
+                    <div class="friends-section">
+                        <div class="friends-section-header">
+                            <h3>📬 Demandes reçues (<span id="friendRequestsCount">0</span>)</h3>
+                        </div>
+                        <div id="friendRequestsList" class="friends-list"></div>
+                    </div>
+                    
+                    <!-- Mes amis -->
+                    <div class="friends-section">
+                        <div class="friends-section-header">
+                            <h3>✅ Mes amis (<span id="friendsCount">0</span>)</h3>
+                        </div>
+                        <div id="friendsList" class="friends-list"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Sélection Thématique -->
@@ -1628,7 +1770,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, set, get, update, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getDatabase, ref, set, get, remove, update, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyA-3CZvY0p8A0-k7ZHCRR5VPqZTeTKm4Lw",
@@ -1646,6 +1788,7 @@
         window.firebaseRef = ref;
         window.firebaseSet = set;
         window.firebaseGet = get;
+        window.firebaseRemove = remove; // ✅ AJOUTÉ : nécessaire pour système amis
         window.firebaseUpdate = update;
         window.firebaseOnValue = onValue;
         window.firebaseQuery = query;
@@ -1711,7 +1854,11 @@
             categoryStats: {},
             dailyChallengeCompleted: false,
             lastChallengeDate: '',
-            recoveryCode: ''
+            recoveryCode: '',
+            // ✅ SYSTÈME AMIS
+            friends: {}, // { friendId: { name, addedDate } }
+            friendRequests: {}, // { senderId: { name, date } }
+            sentRequests: {} // { receiverId: { name, date } }
         };
 
         let allQuestions = [];
@@ -1727,6 +1874,7 @@
         let sessionPoints = 0;
         let sessionCoins = 0;
         let sessionBonusPoints = 0;
+        let sessionChallengeReward = 0; // NOUVEAU pour afficher récompense défi séparément
         let quizPaused = false;
         let pausedTime = 0;
         let fromSettings = false;
@@ -1858,7 +2006,16 @@
                 name: 'Expert Sciences', 
                 icon: '🔬', 
                 levels: [10, 25, 50, 100, 250],
-                getProgress: (data) => (data.categoryStats && data.categoryStats['Programme scolaire - Sciences']) ? data.categoryStats['Programme scolaire - Sciences'].correct || 0 : 0,
+                getProgress: (data) => {
+                    if (!data.categoryStats) return 0;
+                    let total = 0;
+                    for (const [key, value] of Object.entries(data.categoryStats)) {
+                        if (key.includes('Sciences') || key.includes('sciences')) {
+                            total += value.correct || 0;
+                        }
+                    }
+                    return total;
+                },
                 getNextTarget: (current) => {
                     const targets = [10, 25, 50, 100, 250];
                     return targets.find(t => t > current) || 250;
@@ -1870,7 +2027,16 @@
                 name: 'Expert Kreyòl', 
                 icon: '🗣️', 
                 levels: [10, 25, 50, 100, 250],
-                getProgress: (data) => (data.categoryStats && data.categoryStats['Programme scolaire - Communication créole']) ? data.categoryStats['Programme scolaire - Communication créole'].correct || 0 : 0,
+                getProgress: (data) => {
+                    if (!data.categoryStats) return 0;
+                    let total = 0;
+                    for (const [key, value] of Object.entries(data.categoryStats)) {
+                        if (key.includes('créole') || key.includes('Créole')) {
+                            total += value.correct || 0;
+                        }
+                    }
+                    return total;
+                },
                 getNextTarget: (current) => {
                     const targets = [10, 25, 50, 100, 250];
                     return targets.find(t => t > current) || 250;
@@ -1882,7 +2048,16 @@
                 name: 'Expert Culture Haïtienne', 
                 icon: '🇭🇹', 
                 levels: [10, 25, 50, 100, 250],
-                getProgress: (data) => (data.categoryStats && data.categoryStats['Culture haïtienne']) ? data.categoryStats['Culture haïtienne'].correct || 0 : 0,
+                getProgress: (data) => {
+                    if (!data.categoryStats) return 0;
+                    let total = 0;
+                    for (const [key, value] of Object.entries(data.categoryStats)) {
+                        if (key.includes('Culture haïtienne') || key.includes('Culture Haïtienne')) {
+                            total += value.correct || 0;
+                        }
+                    }
+                    return total;
+                },
                 getNextTarget: (current) => {
                     const targets = [10, 25, 50, 100, 250];
                     return targets.find(t => t > current) || 250;
@@ -1894,7 +2069,16 @@
                 name: 'Expert Culture Générale', 
                 icon: '🌍', 
                 levels: [10, 25, 50, 100, 250],
-                getProgress: (data) => (data.categoryStats && data.categoryStats['Culture générale']) ? data.categoryStats['Culture générale'].correct || 0 : 0,
+                getProgress: (data) => {
+                    if (!data.categoryStats) return 0;
+                    let total = 0;
+                    for (const [key, value] of Object.entries(data.categoryStats)) {
+                        if (key.includes('Culture générale') || key.includes('Culture Générale')) {
+                            total += value.correct || 0;
+                        }
+                    }
+                    return total;
+                },
                 getNextTarget: (current) => {
                     const targets = [10, 25, 50, 100, 250];
                     return targets.find(t => t > current) || 250;
@@ -1903,16 +2087,44 @@
             }
         ];
 
-        // Défis quotidiens
+        // Défis quotidiens (15 défis variés)
         const DAILY_CHALLENGES = [
             { id: 'perfect', title: '🎯 Parfait', description: 'Obtiens 10/10 à un quiz', reward: 200, check: (data) => data.isPerfect },
             { id: 'speed', title: '⚡ Rapide', description: 'Réponds à 8 questions en moins de 15s chacune', reward: 200, check: (data) => data.fastAnswers >= 8 },
             { id: 'endurance', title: '🔥 Endurant', description: 'Joue 3 quiz d\'affilée', reward: 300, check: (data) => data.consecutiveGames >= 3 },
-            { id: 'precision', title: '🧠 Savant', description: 'Obtiens 80% minimum sur 2 quiz', reward: 250, check: (data) => data.highAccuracyGames >= 2 }
+            { id: 'precision', title: '🧠 Savant', description: 'Obtiens 80% minimum sur 2 quiz', reward: 250, check: (data) => data.highAccuracyGames >= 2 },
+            { id: 'culture_generale', title: '🌍 Érudit', description: 'Complète 1 quiz en Culture Générale', reward: 150, check: (data) => data.cultureGenerale >= 1 },
+            { id: 'haiti_expert', title: '🇭🇹 Patriote', description: 'Complète 1 quiz en Culture Haïtienne', reward: 150, check: (data) => data.cultureHaitienne >= 1 },
+            { id: 'math_master', title: '🔢 Mathématicien', description: 'Fais 10 bonnes réponses en Maths', reward: 200, check: (data) => data.mathsCorrect >= 10 },
+            { id: 'science_fan', title: '🔬 Scientifique', description: 'Fais 10 bonnes réponses en Sciences', reward: 200, check: (data) => data.sciencesCorrect >= 10 },
+            { id: 'no_mistake', title: '💎 Impeccable', description: 'Fais un quiz sans aucune erreur', reward: 250, check: (data) => data.noMistake },
+            { id: 'explorer', title: '🗺️ Explorateur', description: 'Joue dans 3 thématiques différentes', reward: 300, check: (data) => data.differentCategories >= 3 },
+            { id: 'combo_master', title: '🎲 Combo Master', description: 'Réponds correctement à 5 questions d\'affilée', reward: 200, check: (data) => data.correctStreak >= 5 },
+            { id: 'early_bird', title: '🌅 Lève-tôt', description: 'Joue avant 9h du matin', reward: 150, check: (data) => data.earlyBird },
+            { id: 'night_owl', title: '🌙 Noctambule', description: 'Joue après 22h', reward: 150, check: (data) => data.nightOwl },
+            { id: 'coins_collector', title: '💰 Collectionneur', description: 'Gagne 100 jetons en une session', reward: 300, check: (data) => data.sessionCoins >= 100 },
+            { id: 'unstoppable', title: '⚡ Inarrêtable', description: 'Joue 5 quiz en une session', reward: 500, check: (data) => data.consecutiveGames >= 5 }
         ];
 
         let currentDailyChallenge = null;
-        let challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 };
+        let activeDailyChallenge = false; // Le défi doit être activé manuellement
+        let challengeProgress = { 
+            isPerfect: false, 
+            fastAnswers: 0, 
+            consecutiveGames: 0, 
+            highAccuracyGames: 0,
+            cultureGenerale: 0,
+            cultureHaitienne: 0,
+            mathsCorrect: 0,
+            sciencesCorrect: 0,
+            noMistake: false,
+            differentCategories: 0,
+            categoriesPlayed: [],
+            correctStreak: 0,
+            earlyBird: false,
+            nightOwl: false,
+            sessionCoins: 0
+        };
 
         // Fonction pour chiffrer le code de récupération (SHA-256)
         async function hashRecoveryCode(code) {
@@ -2005,6 +2217,8 @@
             initAudio();
             updateSyncBadge();
             startHeartRegenTimer(); // NOUVEAU démarrer timer régénération
+            await loadFriendRequests(); // Charger demandes d'amis
+            updateFriendsBadge(); // Afficher badge si nouvelles demandes
         }
 
         function initAudio() {
@@ -2177,6 +2391,381 @@
             const syncBadge = document.getElementById('syncBadge');
             if (syncBadge) {
                 syncBadge.style.display = needsSync ? 'inline-block' : 'none';
+            }
+        }
+
+        // ========================================
+        // SYSTÈME AMIS
+        // ========================================
+
+        async function searchUserByName(searchName) {
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseGet) {
+                alert('❌ Tu dois être connecté à internet pour rechercher des amis.');
+                return null;
+            }
+
+            if (!searchName || searchName.trim() === '') {
+                alert('⚠️ Entre un nom d\'utilisateur');
+                return null;
+            }
+
+            try {
+                const usersRef = window.firebaseRef(window.firebaseDB, 'users');
+                const snapshot = await window.firebaseGet(usersRef);
+                
+                if (!snapshot.exists()) return null;
+
+                const users = snapshot.val();
+                const searchLower = searchName.trim().toLowerCase();
+                
+                // Chercher utilisateur par nom (case insensitive)
+                for (const [uid, user] of Object.entries(users)) {
+                    if (user.name && user.name.toLowerCase() === searchLower) {
+                        // Ne pas retourner soi-même
+                        if (uid === userId) {
+                            alert('😄 C\'est toi ! Tu ne peux pas t\'ajouter comme ami.');
+                            return null;
+                        }
+                        
+                        // Vérifier si déjà ami
+                        if (userData.friends && userData.friends[uid]) {
+                            alert('✅ ' + user.name + ' est déjà ton ami !');
+                            return null;
+                        }
+                        
+                        // Vérifier si demande déjà envoyée
+                        if (userData.sentRequests && userData.sentRequests[uid]) {
+                            alert('⏳ Tu as déjà envoyé une demande à ' + user.name);
+                            return null;
+                        }
+                        
+                        return { uid: uid, name: user.name, points: user.points || 0 };
+                    }
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Erreur recherche:', error);
+                alert('❌ Erreur lors de la recherche');
+                return null;
+            }
+        }
+
+        async function sendFriendRequest(targetUserId, targetUserName) {
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseSet) {
+                alert('❌ Tu dois être connecté à internet');
+                return false;
+            }
+
+            try {
+                const now = new Date().toISOString();
+                
+                // Ajouter la demande chez le destinataire
+                const targetRequestRef = window.firebaseRef(window.firebaseDB, `users/${targetUserId}/friendRequests/${userId}`);
+                await window.firebaseSet(targetRequestRef, {
+                    name: userData.name,
+                    date: now
+                });
+                
+                // Ajouter dans sentRequests de l'envoyeur
+                if (!userData.sentRequests) userData.sentRequests = {};
+                userData.sentRequests[targetUserId] = {
+                    name: targetUserName,
+                    date: now
+                };
+                
+                await saveUserData();
+                
+                alert('✅ Demande d\'ami envoyée à ' + targetUserName + ' !');
+                return true;
+            } catch (error) {
+                console.error('Erreur envoi demande:', error);
+                alert('❌ Erreur lors de l\'envoi');
+                return false;
+            }
+        }
+
+        async function acceptFriendRequest(senderId, senderName) {
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseSet || !window.firebaseRemove) {
+                alert('❌ Tu dois être connecté à internet');
+                return false;
+            }
+
+            try {
+                const now = new Date().toISOString();
+                
+                // Ajouter dans les amis des deux côtés
+                if (!userData.friends) userData.friends = {};
+                userData.friends[senderId] = {
+                    name: senderName,
+                    addedDate: now
+                };
+                
+                // Ajouter dans les amis de l'envoyeur
+                const senderFriendRef = window.firebaseRef(window.firebaseDB, `users/${senderId}/friends/${userId}`);
+                await window.firebaseSet(senderFriendRef, {
+                    name: userData.name,
+                    addedDate: now
+                });
+                
+                // Supprimer la demande reçue
+                if (userData.friendRequests && userData.friendRequests[senderId]) {
+                    delete userData.friendRequests[senderId];
+                }
+                const requestRef = window.firebaseRef(window.firebaseDB, `users/${userId}/friendRequests/${senderId}`);
+                await window.firebaseRemove(requestRef);
+                
+                // Supprimer la demande envoyée de l'envoyeur
+                const sentRequestRef = window.firebaseRef(window.firebaseDB, `users/${senderId}/sentRequests/${userId}`);
+                await window.firebaseRemove(sentRequestRef);
+                
+                await saveUserData();
+                
+                alert('✅ ' + senderName + ' est maintenant ton ami !');
+                return true;
+            } catch (error) {
+                console.error('Erreur acceptation:', error);
+                alert('❌ Erreur lors de l\'acceptation');
+                return false;
+            }
+        }
+
+        async function rejectFriendRequest(senderId) {
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseRemove) {
+                alert('❌ Tu dois être connecté à internet');
+                return false;
+            }
+
+            try {
+                // Supprimer la demande reçue
+                if (userData.friendRequests && userData.friendRequests[senderId]) {
+                    delete userData.friendRequests[senderId];
+                }
+                const requestRef = window.firebaseRef(window.firebaseDB, `users/${userId}/friendRequests/${senderId}`);
+                await window.firebaseRemove(requestRef);
+                
+                // Supprimer la demande envoyée de l'envoyeur
+                const sentRequestRef = window.firebaseRef(window.firebaseDB, `users/${senderId}/sentRequests/${userId}`);
+                await window.firebaseRemove(sentRequestRef);
+                
+                await saveUserData();
+                
+                return true;
+            } catch (error) {
+                console.error('Erreur refus:', error);
+                alert('❌ Erreur lors du refus');
+                return false;
+            }
+        }
+
+        async function sendHeartGift(friendId, friendName) {
+            // Vérifier qu'on a au moins 1 cœur
+            if (userData.hearts < 1) {
+                alert('❌ Tu n\'as pas de cœur à envoyer ! Achètes-en dans la boutique.');
+                return false;
+            }
+
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseSet || !window.firebaseGet) {
+                alert('❌ Tu dois être connecté à internet');
+                return false;
+            }
+
+            if (!confirm(`💝 Envoyer 1 cœur à ${friendName} ?\n\nTu as actuellement ${userData.hearts} ❤️`)) {
+                return false;
+            }
+
+            try {
+                // Récupérer les données de l'ami
+                const friendRef = window.firebaseRef(window.firebaseDB, `users/${friendId}`);
+                const friendSnapshot = await window.firebaseGet(friendRef);
+                
+                if (!friendSnapshot.exists()) {
+                    alert('❌ Ami introuvable');
+                    return false;
+                }
+                
+                const friendData = friendSnapshot.val();
+                
+                // Vérifier limite 25 cœurs de l'ami
+                const friendHearts = friendData.hearts || 0;
+                if (friendHearts >= 25) {
+                    alert('⚠️ ' + friendName + ' a déjà le maximum de cœurs (25) !');
+                    return false;
+                }
+                
+                // Retirer 1 cœur à soi
+                userData.hearts--;
+                await saveUserData();
+                
+                // Ajouter 1 cœur à l'ami
+                const newFriendHearts = Math.min(friendHearts + 1, 25);
+                const friendHeartsRef = window.firebaseRef(window.firebaseDB, `users/${friendId}/hearts`);
+                await window.firebaseSet(friendHeartsRef, newFriendHearts);
+                
+                updateHeartsDisplay();
+                alert('✅ 1 cœur envoyé à ' + friendName + ' ! 💝');
+                
+                playSound('correct');
+                vibrate(50);
+                
+                return true;
+            } catch (error) {
+                console.error('Erreur envoi cœur:', error);
+                // Restaurer le cœur en cas d'erreur
+                userData.hearts++;
+                await saveUserData();
+                updateHeartsDisplay();
+                alert('❌ Erreur lors de l\'envoi');
+                return false;
+            }
+        }
+
+        async function loadFriendRequests() {
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseGet) {
+                return;
+            }
+
+            try {
+                const requestsRef = window.firebaseRef(window.firebaseDB, `users/${userId}/friendRequests`);
+                const snapshot = await window.firebaseGet(requestsRef);
+                
+                if (snapshot.exists()) {
+                    userData.friendRequests = snapshot.val();
+                } else {
+                    userData.friendRequests = {};
+                }
+            } catch (error) {
+                console.error('Erreur chargement demandes:', error);
+            }
+        }
+
+        // ========================================
+        // ÉCRANS & MODALS AMIS
+        // ========================================
+
+        function showFriendsScreen() {
+            hideAllScreens();
+            document.querySelector('.friends-screen').classList.add('active');
+            updateFriendsDisplay();
+        }
+
+        async function updateFriendsDisplay() {
+            await loadFriendRequests();
+            
+            // ✅ Protection null - compatibilité anciens comptes
+            if (!userData.friendRequests) userData.friendRequests = {};
+            if (!userData.friends) userData.friends = {};
+            if (!userData.sentRequests) userData.sentRequests = {};
+            
+            const requestsCount = Object.keys(userData.friendRequests).length;
+            const friendsCount = Object.keys(userData.friends).length;
+            
+            document.getElementById('friendRequestsCount').textContent = requestsCount;
+            document.getElementById('friendsCount').textContent = friendsCount;
+            
+            // Mettre à jour badge notification
+            updateFriendsBadge();
+            
+            // Afficher les demandes
+            const requestsList = document.getElementById('friendRequestsList');
+            if (requestsCount === 0) {
+                requestsList.innerHTML = '<div class="no-friends">Aucune demande en attente</div>';
+            } else {
+                requestsList.innerHTML = '';
+                for (const [senderId, request] of Object.entries(userData.friendRequests)) {
+                    const div = document.createElement('div');
+                    div.className = 'friend-request-item';
+                    div.innerHTML = `
+                        <div class="friend-name">👤 ${request.name}</div>
+                        <div class="friend-actions">
+                            <button class="btn btn-small btn-success" onclick="handleAcceptFriend('${senderId}', '${request.name.replace(/'/g, "\\'")}')">✅ Accepter</button>
+                            <button class="btn btn-small btn-danger" onclick="handleRejectFriend('${senderId}')">❌ Refuser</button>
+                        </div>
+                    `;
+                    requestsList.appendChild(div);
+                }
+            }
+            
+            // Afficher les amis
+            const friendsList = document.getElementById('friendsList');
+            if (friendsCount === 0) {
+                friendsList.innerHTML = '<div class="no-friends">Ajoute des amis pour jouer ensemble ! 👥</div>';
+            } else {
+                friendsList.innerHTML = '';
+                for (const [friendId, friend] of Object.entries(userData.friends)) {
+                    const div = document.createElement('div');
+                    div.className = 'friend-item';
+                    div.innerHTML = `
+                        <div class="friend-name">👤 ${friend.name}</div>
+                        <button class="btn btn-small btn-primary" onclick="sendHeartGift('${friendId}', '${friend.name.replace(/'/g, "\\'")}')">💝 Envoyer 1 ❤️</button>
+                    `;
+                    friendsList.appendChild(div);
+                }
+            }
+        }
+
+        function showSearchFriendModal() {
+            document.getElementById('searchFriendModal').classList.add('active');
+            document.getElementById('searchFriendInput').value = '';
+            document.getElementById('searchFriendResult').innerHTML = '';
+        }
+
+        function closeSearchFriendModal() {
+            document.getElementById('searchFriendModal').classList.remove('active');
+        }
+
+        async function handleSearchFriend() {
+            const searchInput = document.getElementById('searchFriendInput');
+            const searchName = searchInput.value.trim();
+            const resultDiv = document.getElementById('searchFriendResult');
+            
+            if (!searchName) {
+                resultDiv.innerHTML = '<div style="color: #ef4444;">⚠️ Entre un nom d\'utilisateur</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div style="color: #3b82f6;">🔍 Recherche en cours...</div>';
+            
+            const user = await searchUserByName(searchName);
+            
+            if (!user) {
+                resultDiv.innerHTML = '<div style="color: #ef4444;">❌ Utilisateur introuvable</div>';
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="search-result">
+                        <div class="search-result-name">👤 ${user.name}</div>
+                        <div class="search-result-points">⭐ ${user.points} points</div>
+                        <button class="btn btn-primary" onclick="sendFriendRequest('${user.uid}', '${user.name.replace(/'/g, "\\'")}'); closeSearchFriendModal();">
+                            ➕ Ajouter en ami
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        async function handleAcceptFriend(senderId, senderName) {
+            const success = await acceptFriendRequest(senderId, senderName);
+            if (success) {
+                updateFriendsDisplay();
+            }
+        }
+
+        async function handleRejectFriend(senderId) {
+            const success = await rejectFriendRequest(senderId);
+            if (success) {
+                updateFriendsDisplay();
+            }
+        }
+
+        function updateFriendsBadge() {
+            const badge = document.getElementById('friendsBadge');
+            const requestsCount = userData.friendRequests ? Object.keys(userData.friendRequests).length : 0;
+            
+            if (badge) {
+                badge.style.display = requestsCount > 0 ? 'inline-block' : 'none';
+                if (requestsCount > 0) {
+                    badge.textContent = requestsCount;
+                }
             }
         }
 
@@ -2491,11 +3080,11 @@
             detailsHTML += `<div class="points-item"><span>${correctCount} bonnes réponses × ${baseCoinsPerQuestion} 🪙</span><span>+${correctCount * baseCoinsPerQuestion} 🪙</span></div>`;
             detailsHTML += '</div>';
             
-            // Calcul approximatif des jetons rapides
+            // Calcul approximatif des jetons rapides (en excluant le défi et le bonus parfait)
             const perfectCoins = correctCount === currentQuestions.length ? 50 : 0;
-            const totalCoinsWithoutPerfect = sessionCoins - perfectCoins;
+            const totalCoinsWithoutPerfectAndChallenge = sessionCoins - perfectCoins - sessionChallengeReward;
             const baseCoins = correctCount * baseCoinsPerQuestion;
-            const fastCoins = totalCoinsWithoutPerfect - baseCoins;
+            const fastCoins = totalCoinsWithoutPerfectAndChallenge - baseCoins;
             const fastCount = fastCoins / coinBonusPerFast;
             
             if (fastCoins > 0 || perfectCoins > 0) {
@@ -2509,6 +3098,13 @@
                     detailsHTML += `<div class="points-item"><span>Quiz parfait 🎉</span><span>+${perfectCoins} 🪙</span></div>`;
                 }
                 
+                detailsHTML += '</div>';
+            }
+            
+            // ✅ AFFICHER RÉCOMPENSE DÉFI SÉPARÉMENT
+            if (sessionChallengeReward > 0) {
+                detailsHTML += '<div class="points-section"><div class="points-section-title">Récompense Défi</div>';
+                detailsHTML += `<div class="points-item"><span>Défi quotidien complété ⚡</span><span>+${sessionChallengeReward} 🪙</span></div>`;
                 detailsHTML += '</div>';
             }
             
@@ -2881,7 +3477,7 @@
         function showSettings() {
             fromSettings = document.querySelector('.quiz-screen').classList.contains('active');
             
-            // Détecter d'où on vient
+            // Détecter d'où on vient (ajouter friends-screen)
             if (document.querySelector('.profile-screen').classList.contains('active')) {
                 returnToScreen = 'profile';
             } else if (document.querySelector('.leaderboard-screen').classList.contains('active')) {
@@ -2894,6 +3490,8 @@
                 returnToScreen = 'category';
             } else if (document.querySelector('.result-screen').classList.contains('active')) {
                 returnToScreen = 'result';
+            } else if (document.querySelector('.friends-screen').classList.contains('active')) {
+                returnToScreen = 'friends';
             } else {
                 returnToScreen = 'menu';
             }
@@ -2928,6 +3526,8 @@
                 document.querySelector('.category-screen').classList.add('active');
             } else if (returnToScreen === 'result') {
                 document.querySelector('.result-screen').classList.add('active');
+            } else if (returnToScreen === 'friends') {
+                document.querySelector('.friends-screen').classList.add('active');
             } else {
                 showMenu();
             }
@@ -2996,7 +3596,6 @@
             BADGES.forEach(badge => {
                 const levelInfo = getBadgeLevel(badge.id);
                 const isUnlocked = levelInfo.current > 0;
-                const currentLevelIndex = Math.min(levelInfo.current, badge.levels.length) - 1;
                 
                 const progressPercent = levelInfo.current < badge.levels.length 
                     ? (levelInfo.progress / levelInfo.nextTarget) * 100 
@@ -3005,9 +3604,10 @@
                 const div = document.createElement('div');
                 div.className = 'badge-container ' + (isUnlocked ? 'unlocked' : 'locked');
                 
-                const description = isUnlocked 
-                    ? badge.descriptions[currentLevelIndex] 
-                    : badge.descriptions[0];
+                // Afficher la description du niveau qu'on essaie d'atteindre (le prochain)
+                // Si on a complété 2 niveaux, levelInfo.current = 2, on affiche description[2] (le 3e niveau)
+                const descriptionIndex = Math.min(levelInfo.current, badge.levels.length - 1);
+                const description = badge.descriptions[descriptionIndex];
                 
                 const progressText = levelInfo.current < badge.levels.length
                     ? `${levelInfo.progress}/${levelInfo.nextTarget}`
@@ -3101,8 +3701,53 @@
         }
 
         function startDailyQuiz() {
-            challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 };
-            startQuiz('all', 'Défi Quotidien', 'mixte');
+            // ✅ ACTIVER LE DÉFI
+            activeDailyChallenge = true;
+            
+            const now = new Date();
+            const hour = now.getHours();
+            
+            challengeProgress = { 
+                isPerfect: false, 
+                fastAnswers: 0, 
+                consecutiveGames: 0, 
+                highAccuracyGames: 0,
+                cultureGenerale: 0,
+                cultureHaitienne: 0,
+                mathsCorrect: 0,
+                sciencesCorrect: 0,
+                noMistake: false,
+                differentCategories: 0,
+                categoriesPlayed: [],
+                correctStreak: 0,
+                earlyBird: hour < 9,
+                nightOwl: hour >= 22,
+                sessionCoins: 0
+            };
+            
+            // ✅ Lancer la bonne catégorie selon le défi
+            if (!currentDailyChallenge) {
+                startQuiz('all', 'Défi Quotidien', 'mixte');
+                return;
+            }
+            
+            switch (currentDailyChallenge.id) {
+                case 'math_master':
+                    startQuiz('Programme scolaire - Mathématiques', 'Mathématiques', 'maths');
+                    break;
+                case 'science_fan':
+                    startQuiz('Programme scolaire - Sciences', 'Sciences', 'sciences');
+                    break;
+                case 'haiti_expert':
+                    startQuiz('Culture haïtienne', 'Culture Haïtienne', 'culture-haitienne');
+                    break;
+                case 'culture_generale':
+                    startQuiz('Culture générale', 'Culture Générale', 'culture-generale');
+                    break;
+                default:
+                    // Défis généraux (parfait, rapide, endurant, savant, explorateur...) → mode mixte
+                    startQuiz('all', 'Défi Quotidien', 'mixte');
+            }
         }
 
         function showCategories() {
@@ -3137,7 +3782,7 @@
         }
 
         function hideAllScreens() {
-            document.querySelectorAll('.menu-screen, .category-screen, .quiz-screen, .result-screen, .leaderboard-screen, .settings-screen, .welcome-screen, .pause-screen, .profile-screen, .levels-screen, .daily-challenge-screen, .level-up-screen')
+            document.querySelectorAll('.menu-screen, .category-screen, .quiz-screen, .result-screen, .leaderboard-screen, .settings-screen, .welcome-screen, .pause-screen, .profile-screen, .levels-screen, .daily-challenge-screen, .friends-screen, .level-up-screen')
                 .forEach(screen => screen.classList.remove('active'));
         }
 
@@ -3249,8 +3894,25 @@
             sessionPoints = 0;
             sessionCoins = 0;
             sessionBonusPoints = 0;
+            sessionChallengeReward = 0; // ✅ Reset récompense défi
             pointsBeforeQuiz = userData.points; // Sauvegarder points AVANT le quiz
-            challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 }; // Reset challenge
+            
+            // ✅ Tracking défi si activé (cumulatif - ne pas écraser noMistake si déjà false)
+            if (activeDailyChallenge) {
+                // noMistake reste false si déjà échoué dans un quiz précédent
+                if (challengeProgress.noMistake !== false) {
+                    challengeProgress.noMistake = true; // Optimiste pour ce quiz
+                }
+                
+                // Tracker catégorie jouée pour "Explorateur"
+                const catKey = currentCategoryKey === 'all' ? 'Mixte' : currentCategoryKey;
+                if (!challengeProgress.categoriesPlayed.includes(catKey)) {
+                    challengeProgress.categoriesPlayed.push(catKey);
+                    challengeProgress.differentCategories = challengeProgress.categoriesPlayed.length;
+                }
+                
+                challengeProgress.consecutiveGames++;
+            }
 
             hideAllScreens();
             document.querySelector('.quiz-screen').classList.add('active');
@@ -3339,12 +4001,39 @@
                 if (timeLeft > (timerDuration - 15)) {
                     challengeProgress.fastAnswers++;
                 }
+                
+                // ✅ TRACKING DÉFIS SI ACTIVÉ
+                if (activeDailyChallenge) {
+                    challengeProgress.correctStreak++;
+                    challengeProgress.sessionCoins = sessionCoins;
+                    
+                    // Tracker catégories pour défis spécifiques
+                    const cat = question.category.toLowerCase();
+                    if (cat.includes('mathématiques') || cat.includes('maths')) {
+                        challengeProgress.mathsCorrect++;
+                    }
+                    if (cat.includes('sciences')) {
+                        challengeProgress.sciencesCorrect++;
+                    }
+                    if (cat.includes('culture haïtienne')) {
+                        challengeProgress.cultureHaitienne++;
+                    }
+                    if (cat.includes('culture générale')) {
+                        challengeProgress.cultureGenerale++;
+                    }
+                }
             } else {
                 playSound('incorrect');
                 vibrate([100, 50, 100]);
                 
                 // Perdre un cœur
                 loseHeart();
+                
+                // ✅ TRACKING DÉFIS : reset streak et marquer erreur
+                if (activeDailyChallenge) {
+                    challengeProgress.correctStreak = 0;
+                    challengeProgress.noMistake = false;
+                }
             }
             
             userData.totalAnswers++;
@@ -3471,11 +4160,21 @@
             }
             
             const isPerfect = correctCount === currentQuestions.length && currentQuestions.length > 0;
-            challengeProgress.isPerfect = isPerfect;
             
-            const accuracy = (correctCount / currentQuestions.length) * 100;
-            if (accuracy >= 80) {
-                challengeProgress.highAccuracyGames++;
+            // ✅ TRACKER DÉFI SEULEMENT SI ACTIVÉ - Cumulatif entre quiz
+            if (activeDailyChallenge) {
+                // isPerfect : vrai seulement si CE quiz est parfait
+                if (isPerfect) challengeProgress.isPerfect = true;
+                
+                // noMistake : reste false si une erreur a été faite dans n'importe quel quiz
+                if (!isPerfect && challengeProgress.noMistake) {
+                    challengeProgress.noMistake = false;
+                }
+                
+                const accuracy = (correctCount / currentQuestions.length) * 100;
+                if (accuracy >= 80) {
+                    challengeProgress.highAccuracyGames++;
+                }
             }
             
             // Mettre à jour le streak
@@ -3486,9 +4185,9 @@
             userData.coins += sessionCoins;
             
             if (isPerfect) {
-                const perfectBonus = 50; // ✅ CORRECT : 50 points
+                const perfectBonus = 50;
                 sessionBonusPoints += perfectBonus;
-                sessionCoins += 50; // ✅ CORRECT : 50 jetons
+                sessionCoins += 50;
                 userData.points += perfectBonus;
                 userData.coins += 50;
                 userData.perfectGames = (userData.perfectGames || 0) + 1;
@@ -3497,12 +4196,16 @@
             const newLevel = getLevelInfo(userData.points);
             const oldLevel = getLevelInfo(previousLevel);
             
-            if (currentDailyChallenge && currentDailyChallenge.check(challengeProgress)) {
+            // ✅ VÉRIFIER DÉFI SEULEMENT SI ACTIVÉ
+            sessionChallengeReward = 0;
+            if (activeDailyChallenge && currentDailyChallenge && currentDailyChallenge.check(challengeProgress)) {
                 userData.dailyChallengeCompleted = true;
                 userData.lastChallengeDate = new Date().toDateString();
-                userData.coins += currentDailyChallenge.reward;
-                sessionCoins += currentDailyChallenge.reward;
+                sessionChallengeReward = currentDailyChallenge.reward;
+                userData.coins += sessionChallengeReward;
+                sessionCoins += sessionChallengeReward;
                 document.getElementById('challengeBadge').style.display = 'none';
+                activeDailyChallenge = false;
             }
             
             saveUserData();
@@ -3781,6 +4484,29 @@
                     </div>
                 </div>
                 <button class="btn btn-primary" onclick="closeHeartsShopModal()" style="margin-top: 15px;">← Retour</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Friend Modal -->
+    <div class="points-details-modal" id="searchFriendModal">
+        <div class="modal-overlay" onclick="closeSearchFriendModal()">
+            <div class="points-details-card" onclick="event.stopPropagation()">
+                <h2 style="text-align: center; margin-bottom: 20px; color: var(--text-primary);">🔍 Rechercher un ami</h2>
+                <div style="margin-bottom: 20px;">
+                    <input 
+                        type="text" 
+                        id="searchFriendInput" 
+                        placeholder="Nom d'utilisateur exact..." 
+                        style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 16px; background: var(--bg-secondary); color: var(--text-primary); box-sizing: border-box;"
+                        onkeypress="if(event.key === 'Enter') handleSearchFriend()"
+                    >
+                </div>
+                <div id="searchFriendResult" style="min-height: 60px; margin-bottom: 20px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="handleSearchFriend()">🔍 Rechercher</button>
+                    <button class="btn btn-secondary" onclick="closeSearchFriendModal()">← Annuler</button>
+                </div>
             </div>
         </div>
     </div>
