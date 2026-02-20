@@ -15,6 +15,15 @@
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="apple-touch-icon" href="icon-192.png">
     
+    <!-- Google Analytics GA4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0Q41EFYK2X"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-0Q41EFYK2X');
+    </script>
+    
     <style>
         /* Variables pour thème clair/nuit */
         :root {
@@ -1536,6 +1545,10 @@
                             <span class="stat-label">Jetons collectés</span>
                             <span class="stat-value" id="coinsProfile">0 🪙</span>
                         </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Likes reçus</span>
+                            <span class="stat-value" id="likesProfile" style="color: #ef4444;">0 👍</span>
+                        </div>
                     </div>
 
                     <div class="section-title">🔑 Code de Sauvegarde</div>
@@ -1858,7 +1871,10 @@
             // ✅ SYSTÈME AMIS
             friends: {}, // { friendId: { name, addedDate } }
             friendRequests: {}, // { senderId: { name, date } }
-            sentRequests: {} // { receiverId: { name, date } }
+            sentRequests: {}, // { receiverId: { name, date } }
+            // ✅ SYSTÈME NOTIFICATIONS & LIKES
+            pendingNotifications: [], // { type, from, amount, date }
+            likes: 0 // Nombre de likes reçus
         };
 
         let allQuestions = [];
@@ -2084,6 +2100,28 @@
                     return targets.find(t => t > current) || 250;
                 },
                 descriptions: ['10 bonnes réponses en Culture Générale', '25 bonnes réponses en Culture Générale', '50 bonnes réponses en Culture Générale', '100 bonnes réponses en Culture Générale', '250 bonnes réponses en Culture Générale']
+            },
+            { 
+                id: 'social_butterfly', 
+                name: 'Social', 
+                icon: '👥', 
+                levels: [1, 3, 5, 10, 20],
+                getProgress: (data) => {
+                    // ✅ Protections comme les autres badges
+                    if (!data.friends) return 0;
+                    return Object.keys(data.friends).length;
+                },
+                getNextTarget: (current) => {
+                    const targets = [1, 3, 5, 10, 20];
+                    return targets.find(t => t > current) || 20;
+                },
+                descriptions: [
+                    '1 ami ajouté', 
+                    '3 amis ajoutés', 
+                    '5 amis ajoutés', 
+                    '10 amis ajoutés', 
+                    '20 amis ajoutés'
+                ]
             }
         ];
 
@@ -2219,6 +2257,7 @@
             startHeartRegenTimer(); // NOUVEAU démarrer timer régénération
             await loadFriendRequests(); // Charger demandes d'amis
             updateFriendsBadge(); // Afficher badge si nouvelles demandes
+            await checkPendingNotifications(); // ✅ Afficher notifications cœurs/jetons reçus
         }
 
         function initAudio() {
@@ -2255,23 +2294,26 @@
                     } else {
                         userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
                         const newCode = generateRecoveryCode();
-                        userData.recoveryCodeHash = await hashRecoveryCode(newCode);
+                        userData.recoveryCode = newCode; // ✅ FIX: Stocker en clair, pas hashé
                         localStorage.setItem('recoveryCodePlain_' + userId, newCode);
                         await saveUserData();
                     }
                     
-                    // Migration : si ancien système (recoveryCode en clair), convertir en hash
-                    if (userData.recoveryCode && !userData.recoveryCodeHash) {
-                        userData.recoveryCodeHash = await hashRecoveryCode(userData.recoveryCode);
-                        localStorage.setItem('recoveryCodePlain_' + userId, userData.recoveryCode);
-                        delete userData.recoveryCode;
+                    // ✅ FIX: Migration anciennes données - convertir hash en clair si besoin
+                    if (userData.recoveryCodeHash && !userData.recoveryCode) {
+                        // Ancien système avec hash → garder le hash mais impossible de restaurer
+                        // Le joueur doit copier son nouveau code
+                        const newCode = generateRecoveryCode();
+                        userData.recoveryCode = newCode;
+                        localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+                        delete userData.recoveryCodeHash; // Supprimer ancien hash
                         await saveUserData();
                     }
                     
                     // Générer code si manquant (migration)
-                    if (!userData.recoveryCodeHash) {
+                    if (!userData.recoveryCode) {
                         const newCode = generateRecoveryCode();
-                        userData.recoveryCodeHash = await hashRecoveryCode(newCode);
+                        userData.recoveryCode = newCode; // ✅ FIX: En clair
                         localStorage.setItem('recoveryCodePlain_' + userId, newCode);
                         await saveUserData();
                     }
@@ -2291,23 +2333,24 @@
                     if (userData.badgeProgress === undefined) userData.badgeProgress = {};
                     if (userData.categoryStats === undefined) userData.categoryStats = {};
                     if (userData.purchasedHearts === undefined) userData.purchasedHearts = 0;
-                    // Migration : convertir ancien recoveryCode en hash
-                    if (userData.recoveryCode && !userData.recoveryCodeHash) {
-                        userData.recoveryCodeHash = await hashRecoveryCode(userData.recoveryCode);
-                        localStorage.setItem('recoveryCodePlain_' + userId, userData.recoveryCode);
-                        delete userData.recoveryCode;
+                    // ✅ FIX: Migration - convertir hash en clair
+                    if (userData.recoveryCodeHash && !userData.recoveryCode) {
+                        const newCode = generateRecoveryCode();
+                        userData.recoveryCode = newCode;
+                        localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+                        delete userData.recoveryCodeHash;
                         localStorage.setItem('userData', JSON.stringify(userData));
                     }
-                    if (!userData.recoveryCodeHash) {
+                    if (!userData.recoveryCode) {
                         const newCode = generateRecoveryCode();
-                        userData.recoveryCodeHash = await hashRecoveryCode(newCode);
+                        userData.recoveryCode = newCode; // ✅ FIX: En clair
                         localStorage.setItem('recoveryCodePlain_' + userId, newCode);
                         localStorage.setItem('userData', JSON.stringify(userData));
                     }
                 } else {
                     userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
                     const newCode = generateRecoveryCode();
-                    userData.recoveryCodeHash = await hashRecoveryCode(newCode);
+                    userData.recoveryCode = newCode; // ✅ FIX: En clair
                     localStorage.setItem('recoveryCodePlain_' + userId, newCode);
                 }
                 updateUI();
@@ -2565,7 +2608,7 @@
                 return false;
             }
 
-            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseSet || !window.firebaseGet) {
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseUpdate || !window.firebaseGet) {
                 alert('❌ Tu dois être connecté à internet');
                 return false;
             }
@@ -2597,10 +2640,25 @@
                 userData.hearts--;
                 await saveUserData();
                 
-                // Ajouter 1 cœur à l'ami
+                // ✅ FIX CRITIQUE : Utiliser firebaseUpdate au lieu de firebaseSet
                 const newFriendHearts = Math.min(friendHearts + 1, 25);
-                const friendHeartsRef = window.firebaseRef(window.firebaseDB, `users/${friendId}/hearts`);
-                await window.firebaseSet(friendHeartsRef, newFriendHearts);
+                const notification = {
+                    type: 'heart',
+                    from: userData.name,
+                    fromId: userId,
+                    amount: 1,
+                    date: new Date().toISOString()
+                };
+                
+                // Récupérer notifications existantes et ajouter la nouvelle
+                const friendPendingNotifs = friendData.pendingNotifications || [];
+                friendPendingNotifs.push(notification);
+                
+                // UPDATE seulement hearts + pendingNotifications (pas tout l'objet)
+                await window.firebaseUpdate(friendRef, {
+                    hearts: newFriendHearts,
+                    pendingNotifications: friendPendingNotifs
+                });
                 
                 updateHeartsDisplay();
                 alert('✅ 1 cœur envoyé à ' + friendName + ' ! 💝');
@@ -2616,6 +2674,134 @@
                 await saveUserData();
                 updateHeartsDisplay();
                 alert('❌ Erreur lors de l\'envoi');
+                return false;
+            }
+        }
+
+        async function sendCoinsGift(friendId, friendName) {
+            // Demander le montant
+            const amount = prompt(`💰 Combien de jetons veux-tu envoyer à ${friendName} ?\n\nTu as ${userData.coins} 🪙`, '50');
+            
+            if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
+                return false;
+            }
+
+            const coinsToSend = parseInt(amount);
+
+            // Vérifier qu'on a assez de jetons
+            if (userData.coins < coinsToSend) {
+                alert(`❌ Tu n'as pas assez de jetons ! Tu as ${userData.coins} 🪙`);
+                return false;
+            }
+
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseUpdate || !window.firebaseGet) {
+                alert('❌ Tu dois être connecté à internet');
+                return false;
+            }
+
+            if (!confirm(`💰 Envoyer ${coinsToSend} jetons à ${friendName} ?`)) {
+                return false;
+            }
+
+            try {
+                // Récupérer les données de l'ami
+                const friendRef = window.firebaseRef(window.firebaseDB, `users/${friendId}`);
+                const friendSnapshot = await window.firebaseGet(friendRef);
+                
+                if (!friendSnapshot.exists()) {
+                    alert('❌ Ami introuvable');
+                    return false;
+                }
+                
+                const friendData = friendSnapshot.val();
+                
+                // Retirer jetons à soi
+                userData.coins -= coinsToSend;
+                await saveUserData();
+                
+                // ✅ FIX CRITIQUE : Utiliser firebaseUpdate au lieu de firebaseSet
+                const newFriendCoins = (friendData.coins || 0) + coinsToSend;
+                const notification = {
+                    type: 'coins',
+                    from: userData.name,
+                    fromId: userId,
+                    amount: coinsToSend,
+                    date: new Date().toISOString()
+                };
+                
+                // Récupérer notifications existantes et ajouter la nouvelle
+                const friendPendingNotifs = friendData.pendingNotifications || [];
+                friendPendingNotifs.push(notification);
+                
+                // UPDATE seulement coins + pendingNotifications (pas tout l'objet)
+                await window.firebaseUpdate(friendRef, {
+                    coins: newFriendCoins,
+                    pendingNotifications: friendPendingNotifs
+                });
+                
+                updateUserDisplay();
+                alert(`✅ ${coinsToSend} jetons envoyés à ${friendName} ! 💰`);
+                
+                playSound('correct');
+                vibrate(50);
+                
+                return true;
+            } catch (error) {
+                console.error('Erreur envoi jetons:', error);
+                // Restaurer les jetons en cas d'erreur
+                userData.coins += coinsToSend;
+                await saveUserData();
+                updateUserDisplay();
+                alert('❌ Erreur lors de l\'envoi');
+                return false;
+            }
+        }
+
+        // ========================================
+        // SYSTÈME LIKES
+        // ========================================
+
+        async function likeUser(targetUserId, targetUserName) {
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseSet || !window.firebaseGet) {
+                alert('❌ Tu dois être connecté à internet');
+                return false;
+            }
+
+            if (targetUserId === userId) {
+                alert('😄 Tu ne peux pas te liker toi-même !');
+                return false;
+            }
+
+            try {
+                // Récupérer les données de l'utilisateur ciblé
+                const targetUserRef = window.firebaseRef(window.firebaseDB, `users/${targetUserId}`);
+                const targetSnapshot = await window.firebaseGet(targetUserRef);
+                
+                if (!targetSnapshot.exists()) {
+                    alert('❌ Utilisateur introuvable');
+                    return false;
+                }
+                
+                const targetUserData = targetSnapshot.val();
+                
+                // Incrémenter les likes
+                const newLikes = (targetUserData.likes || 0) + 1;
+                
+                await window.firebaseSet(window.firebaseRef(window.firebaseDB, `users/${targetUserId}/likes`), newLikes);
+                await window.firebaseSet(window.firebaseRef(window.firebaseDB, `leaderboard/${targetUserId}/likes`), newLikes);
+                
+                alert(`✅ Tu as liké ${targetUserName} ! 👍`);
+                
+                playSound('correct');
+                vibrate(50);
+                
+                // Recharger le leaderboard pour voir le nouveau nombre
+                await loadLeaderboard();
+                
+                return true;
+            } catch (error) {
+                console.error('Erreur like:', error);
+                alert('❌ Erreur lors du like');
                 return false;
             }
         }
@@ -2637,6 +2823,38 @@
             } catch (error) {
                 console.error('Erreur chargement demandes:', error);
             }
+        }
+
+        // ========================================
+        // SYSTÈME NOTIFICATIONS
+        // ========================================
+
+        async function checkPendingNotifications() {
+            if (!userData.pendingNotifications || userData.pendingNotifications.length === 0) {
+                return;
+            }
+
+            // Afficher toutes les notifications d'un coup
+            let notifText = '🎁 Nouvelles notifications :\n\n';
+            
+            userData.pendingNotifications.forEach(notif => {
+                if (notif.type === 'heart') {
+                    notifText += `💝 ${notif.from} t'a envoyé ${notif.amount} cœur(s) !\n`;
+                } else if (notif.type === 'coins') {
+                    notifText += `💰 ${notif.from} t'a envoyé ${notif.amount} jetons !\n`;
+                }
+            });
+
+            alert(notifText);
+            playCelebration();
+            vibrate([100, 50, 100]);
+
+            // Vider les notifications après affichage
+            userData.pendingNotifications = [];
+            await saveUserData();
+            
+            // Mettre à jour l'affichage
+            updateHeartsDisplay();
         }
 
         // ========================================
@@ -2697,7 +2915,10 @@
                     div.className = 'friend-item';
                     div.innerHTML = `
                         <div class="friend-name">👤 ${friend.name}</div>
-                        <button class="btn btn-small btn-primary" onclick="sendHeartGift('${friendId}', '${friend.name.replace(/'/g, "\\'")}')">💝 Envoyer 1 ❤️</button>
+                        <div class="friend-actions">
+                            <button class="btn btn-small btn-primary" onclick="sendHeartGift('${friendId}', '${friend.name.replace(/'/g, "\\'")}')">💝 1 ❤️</button>
+                            <button class="btn btn-small btn-success" onclick="sendCoinsGift('${friendId}', '${friend.name.replace(/'/g, "\\'")}')">💰 Jetons</button>
+                        </div>
                     `;
                     friendsList.appendChild(div);
                 }
@@ -2847,7 +3068,7 @@
             
             // Si le joueur a moins de 3 cœurs gratuits
             if (freeHearts < 3 && lastRegenTime) {
-                const hoursPassed = (now - lastRegenTime) / (1000 * 60 * 60);
+                const hoursPassed = (now - lastRegenTime) / (1000 * 60 * 60 * 2); // ✅ 2 heures
                 const heartsToAdd = Math.floor(hoursPassed);
                 
                 if (heartsToAdd > 0) {
@@ -2892,7 +3113,7 @@
             
             const now = new Date();
             const lastRegenTime = userData.lastHeartRegenTime ? new Date(userData.lastHeartRegenTime) : now;
-            const nextRegenTime = new Date(lastRegenTime.getTime() + 60 * 60 * 1000); // +1h
+            const nextRegenTime = new Date(lastRegenTime.getTime() + 2 * 60 * 60 * 1000); // ✅ +2h
             const timeLeft = nextRegenTime - now;
             
             if (timeLeft <= 0) {
@@ -3424,10 +3645,7 @@
             }
 
             try {
-                // Hacher le code entré par l'utilisateur
-                const codeHash = await hashRecoveryCode(code);
-                
-                // Chercher dans Firebase par recoveryCodeHash
+                // ✅ FIX CRITIQUE: Chercher le code EN CLAIR (pas hashé)
                 if (window.firebaseDB && window.firebaseRef && window.firebaseGet) {
                     const usersRef = window.firebaseRef(window.firebaseDB, 'users');
                     const snapshot = await window.firebaseGet(usersRef);
@@ -3438,8 +3656,8 @@
                         
                         snapshot.forEach((child) => {
                             const user = child.val();
-                            // Comparer SOIT le hash (nouveaux comptes) SOIT le code en clair (anciens comptes)
-                            if (user.recoveryCodeHash === codeHash || user.recoveryCode === code) {
+                            // ✅ FIX: Comparer code EN CLAIR directement
+                            if (user.recoveryCode === code) {
                                 foundUser = user;
                                 foundUserId = child.key;
                             }
@@ -3451,7 +3669,7 @@
                             userData = foundUser;
                             localStorage.setItem('quizUserId', userId);
                             localStorage.setItem('userData', JSON.stringify(userData));
-                            // Sauvegarder le code en clair dans localStorage pour ce compte
+                            // Sauvegarder le code en clair dans localStorage
                             localStorage.setItem('recoveryCodePlain_' + userId, code);
                             
                             closeRestoreModal();
@@ -3575,6 +3793,7 @@
             document.getElementById('accuracyProfile').textContent = accuracy + '%';
             document.getElementById('streakProfile').textContent = userData.streak + ' jours 🔥';
             document.getElementById('coinsProfile').textContent = userData.coins + ' 🪙';
+            document.getElementById('likesProfile').textContent = (userData.likes || 0) + ' 👍'; // ✅ Likes
             
             const totalBadges = getTotalBadgesEarned();
             document.getElementById('totalBadgesCount').textContent = totalBadges;
@@ -4112,7 +4331,11 @@
             quizPaused = false;
             askedQuestionsIds = []; // RESET pour avoir nouvelles questions
             pointsBeforeQuiz = userData.points; // Sauvegarder points AVANT
-            challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 }; // Reset
+            
+            // ✅ NE PAS RESET challengeProgress si défi actif (garde highAccuracyGames cumulé)
+            if (!activeDailyChallenge) {
+                challengeProgress = { isPerfect: false, fastAnswers: 0, consecutiveGames: 0, highAccuracyGames: 0 };
+            }
             
             // Utiliser la VRAIE catégorie Google Sheets stockée !
             let filtered = allQuestions;
@@ -4318,13 +4541,15 @@
                     const level = getLevelInfo(user.points);
                     const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
                     const isYou = user.id === userId;
+                    const likes = user.likes || 0;
                     return `
-                        <div class="leaderboard-item ${isYou ? 'you' : ''}" onclick="showPlayerDetails('${user.id}', '${user.name}', ${user.points}, ${user.correctAnswers || 0}, ${user.totalAnswers || 0}, ${user.totalBadges || 0})">
+                        <div class="leaderboard-item ${isYou ? 'you' : ''}">
                             <div class="rank ${rankClass}">${index + 1}</div>
-                            <div class="player-info">
+                            <div class="player-info" onclick="showPlayerDetails('${user.id}', '${user.name}', ${user.points}, ${user.correctAnswers || 0}, ${user.totalAnswers || 0}, ${user.totalBadges || 0})">
                                 <div class="player-name">${level.medal} ${user.name} ${isYou ? '(Toi)' : ''}</div>
-                                <div class="player-stats">${user.points} pts • ${user.coins} 🪙</div>
+                                <div class="player-stats">${user.points} pts • ${user.coins} 🪙 • <span style="color: #ef4444;">👍 ${likes}</span></div>
                             </div>
+                            ${!isYou ? `<button class="btn btn-small btn-success" onclick="event.stopPropagation(); likeUser('${user.id}', '${user.name}')" style="margin-left: auto;">👍</button>` : ''}
                         </div>
                     `;
                 }).join('');
