@@ -1874,7 +1874,11 @@
             sentRequests: {}, // { receiverId: { name, date } }
             // ✅ SYSTÈME NOTIFICATIONS & LIKES
             pendingNotifications: [], // { type, from, amount, date }
-            likes: 0 // Nombre de likes reçus
+            likes: 0, // Nombre de likes reçus
+            likesGivenToday: 0, // Likes donnés aujourd'hui (max 7)
+            lastLikeDate: '', // Date dernier like donné
+            // ✅ SYSTÈME TRACKING QUESTIONS POSÉES
+            askedQuestions: {} // { 'thematique': ['q001', 'q005', ...] }
         };
 
         let allQuestions = [];
@@ -2772,6 +2776,21 @@
                 return false;
             }
 
+            // ✅ NOUVEAU : Vérifier limite 7 likes par jour
+            const today = new Date().toDateString();
+            
+            // Reset si nouveau jour
+            if (!userData.lastLikeDate || userData.lastLikeDate !== today) {
+                userData.likesGivenToday = 0;
+                userData.lastLikeDate = today;
+            }
+            
+            // Vérifier limite
+            if (userData.likesGivenToday >= 7) {
+                alert('⚠️ Tu as atteint la limite quotidienne de 7 likes !\n\nReviens demain pour liker d\'autres joueurs. 👍');
+                return false;
+            }
+
             try {
                 // Récupérer les données de l'utilisateur ciblé
                 const targetUserRef = window.firebaseRef(window.firebaseDB, `users/${targetUserId}`);
@@ -2790,7 +2809,12 @@
                 await window.firebaseSet(window.firebaseRef(window.firebaseDB, `users/${targetUserId}/likes`), newLikes);
                 await window.firebaseSet(window.firebaseRef(window.firebaseDB, `leaderboard/${targetUserId}/likes`), newLikes);
                 
-                alert(`✅ Tu as liké ${targetUserName} ! 👍`);
+                // ✅ Incrémenter compteur likes donnés
+                userData.likesGivenToday++;
+                await saveUserData();
+                
+                const remaining = 7 - userData.likesGivenToday;
+                alert(`✅ Tu as liké ${targetUserName} ! 👍\n\n${remaining > 0 ? `Il te reste ${remaining} like(s) aujourd'hui.` : 'Limite quotidienne atteinte !'}`);
                 
                 playSound('correct');
                 vibrate(50);
@@ -2834,10 +2858,32 @@
                 return;
             }
 
-            // Afficher toutes les notifications d'un coup
+            // ✅ FIX CRITIQUE : Sauvegarder les notifications AVANT de les afficher
+            // Comme ça, même si l'app ferme rapidement, elles sont déjà vidées côté serveur
+            const notificationsToShow = [...userData.pendingNotifications]; // Copie pour affichage
+            
+            // Vider IMMÉDIATEMENT dans Firebase et userData
+            userData.pendingNotifications = [];
+            
+            // Sauvegarde Firebase directe (prioritaire)
+            if (window.firebaseDB && window.firebaseRef && window.firebaseUpdate) {
+                try {
+                    const userRef = window.firebaseRef(window.firebaseDB, `users/${userId}`);
+                    await window.firebaseUpdate(userRef, {
+                        pendingNotifications: []
+                    });
+                } catch (error) {
+                    console.error('Erreur vidage notifications Firebase:', error);
+                }
+            }
+            
+            // Sauvegarde locale
+            await saveUserData();
+
+            // MAINTENANT afficher les notifications (déjà vidées côté serveur)
             let notifText = '🎁 Nouvelles notifications :\n\n';
             
-            userData.pendingNotifications.forEach(notif => {
+            notificationsToShow.forEach(notif => {
                 if (notif.type === 'heart') {
                     notifText += `💝 ${notif.from} t'a envoyé ${notif.amount} cœur(s) !\n`;
                 } else if (notif.type === 'coins') {
@@ -2848,10 +2894,6 @@
             alert(notifText);
             playCelebration();
             vibrate([100, 50, 100]);
-
-            // Vider les notifications après affichage
-            userData.pendingNotifications = [];
-            await saveUserData();
             
             // Mettre à jour l'affichage
             updateHeartsDisplay();
@@ -3452,18 +3494,31 @@
         function selectQuestionsByDifficulty(questions, count) {
             if (questions.length === 0) return [];
             
+            // ✅ NOUVEAU: Utiliser tracking par thématique dans userData
+            if (!userData.askedQuestions) userData.askedQuestions = {};
+            
+            // Clé thématique pour tracking
+            const themeKey = currentCategoryKey || 'all';
+            if (!userData.askedQuestions[themeKey]) {
+                userData.askedQuestions[themeKey] = [];
+            }
+            
+            const askedInTheme = userData.askedQuestions[themeKey];
             const distribution = getDifficultyDistribution();
             const selected = [];
             
-            // Séparer par difficulté (exclure déjà posées)
-            let easy = questions.filter(q => q.difficulty === 'Facile' && !askedQuestionsIds.includes(q.id));
-            let medium = questions.filter(q => q.difficulty === 'Moyen' && !askedQuestionsIds.includes(q.id));
-            let hard = questions.filter(q => q.difficulty === 'Difficile' && !askedQuestionsIds.includes(q.id));
+            // Séparer par difficulté (exclure déjà posées DANS CETTE THÉMATIQUE)
+            let easy = questions.filter(q => q.difficulty === 'Facile' && !askedInTheme.includes(q.id));
+            let medium = questions.filter(q => q.difficulty === 'Moyen' && !askedInTheme.includes(q.id));
+            let hard = questions.filter(q => q.difficulty === 'Difficile' && !askedInTheme.includes(q.id));
             
-            // Si TOUTES les questions ont été posées → RESET et recommencer
+            // ✅ Si TOUTES les questions ont été posées dans cette thématique → RESET
             if (easy.length === 0 && medium.length === 0 && hard.length === 0) {
-                askedQuestionsIds = [];
-                localStorage.setItem('askedQuestionsIds', JSON.stringify(askedQuestionsIds));
+                console.log('🔄 Toutes questions posées pour ' + themeKey + ' → Reset');
+                userData.askedQuestions[themeKey] = [];
+                saveUserData(); // Sauvegarder reset
+                
+                // Recharger toutes les questions disponibles
                 easy = questions.filter(q => q.difficulty === 'Facile');
                 medium = questions.filter(q => q.difficulty === 'Moyen');
                 hard = questions.filter(q => q.difficulty === 'Difficile');
@@ -3474,7 +3529,7 @@
             let numMedium = Math.round(count * distribution['Moyen'] / 100);
             let numHard = count - numEasy - numMedium;
             
-            // Prendre ce qu'on peut de chaque difficulté
+            // Prendre ce qu'on peut de chaque difficulté (ALÉATOIRE)
             const selectedEasy = shuffleArray(easy).slice(0, Math.min(numEasy, easy.length));
             const selectedMedium = shuffleArray(medium).slice(0, Math.min(numMedium, medium.length));
             const selectedHard = shuffleArray(hard).slice(0, Math.min(numHard, hard.length));
@@ -3483,22 +3538,34 @@
             selected.push(...selectedMedium);
             selected.push(...selectedHard);
             
-            // Si pas assez → Compléter avec N'IMPORTE quelle question non sélectionnée
+            // Si pas assez → Compléter avec questions non encore sélectionnées
             while (selected.length < count) {
-                const remaining = questions.filter(q => !selected.some(s => s.id === q.id));
-                if (remaining.length === 0) break; // Plus de questions dispo
+                const remaining = questions.filter(q => 
+                    !selected.some(s => s.id === q.id) && 
+                    !askedInTheme.includes(q.id)
+                );
                 
-                const randomQuestion = remaining[Math.floor(Math.random() * remaining.length)];
-                selected.push(randomQuestion);
+                if (remaining.length === 0) {
+                    // Plus de questions jamais posées, prendre n'importe quoi
+                    const anyRemaining = questions.filter(q => !selected.some(s => s.id === q.id));
+                    if (anyRemaining.length === 0) break;
+                    const randomQ = anyRemaining[Math.floor(Math.random() * anyRemaining.length)];
+                    selected.push(randomQ);
+                } else {
+                    const randomQ = remaining[Math.floor(Math.random() * remaining.length)];
+                    selected.push(randomQ);
+                }
             }
             
-            // Ajouter les IDs aux questions posées
+            // ✅ Ajouter les IDs au tracking de cette thématique
             selected.forEach(q => {
-                if (!askedQuestionsIds.includes(q.id)) {
-                    askedQuestionsIds.push(q.id);
+                if (!userData.askedQuestions[themeKey].includes(q.id)) {
+                    userData.askedQuestions[themeKey].push(q.id);
                 }
             });
-            localStorage.setItem('askedQuestionsIds', JSON.stringify(askedQuestionsIds));
+            
+            // Sauvegarder immédiatement le tracking
+            saveUserData();
             
             return shuffleArray(selected);
         }
@@ -4040,7 +4107,8 @@
         }
 
         async function loadQuestions() {
-            if (allQuestions.length > 0) return true;
+            // ✅ TOUJOURS recharger pour avoir nouvelles questions
+            // Ne pas return si allQuestions existe déjà
             
             try {
                 const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}?key=${GOOGLE_SHEETS_API_KEY}`;
@@ -4058,15 +4126,16 @@
                     difficulty: row[9] || 'Moyen'
                 }));
                 
-                // Sauvegarder dans le cache
+                // Sauvegarder dans le cache pour mode offline
                 localStorage.setItem('questionsCache', JSON.stringify(allQuestions));
                 localStorage.setItem('questionsCacheDate', new Date().toISOString());
                 
+                console.log('✅ Questions chargées:', allQuestions.length);
                 return true;
             } catch (error) {
                 console.error('Erreur chargement questions:', error);
                 
-                // Essayer de charger depuis le cache
+                // Essayer de charger depuis le cache (mode offline)
                 const cachedQuestions = localStorage.getItem('questionsCache');
                 if (cachedQuestions) {
                     allQuestions = JSON.parse(cachedQuestions);
@@ -4224,7 +4293,7 @@
                 // ✅ TRACKING DÉFIS SI ACTIVÉ
                 if (activeDailyChallenge) {
                     challengeProgress.correctStreak++;
-                    challengeProgress.sessionCoins = sessionCoins;
+                    // ✅ sessionCoins est maintenant cumulé dans showResults(), pas ici
                     
                     // Tracker catégories pour défis spécifiques
                     const cat = question.category.toLowerCase();
@@ -4414,6 +4483,11 @@
                 userData.points += perfectBonus;
                 userData.coins += 50;
                 userData.perfectGames = (userData.perfectGames || 0) + 1;
+            }
+            
+            // ✅ FIX DÉFI COINS_COLLECTOR : Cumuler jetons de TOUS les quiz de la session
+            if (activeDailyChallenge) {
+                challengeProgress.sessionCoins = (challengeProgress.sessionCoins || 0) + sessionCoins;
             }
             
             const newLevel = getLevelInfo(userData.points);
