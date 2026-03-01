@@ -2264,6 +2264,11 @@
             updateFriendsBadge(); // Afficher badge si nouvelles demandes
             await checkPendingNotifications(); // ✅ Afficher notifications cœurs/jetons reçus
             initPushNotifications(); // 🔔 Notifications locales
+            // ✅ FIX deleteAccount : afficher modal restauration si demandé
+            if (localStorage.getItem('showRestoreOnLoad') === 'true') {
+                localStorage.removeItem('showRestoreOnLoad');
+                setTimeout(() => showRestoreModal(), 1000);
+            }
         }
 
         // ===== SYSTÈME NOTIFICATIONS LOCALES =====
@@ -2341,82 +2346,61 @@
         }
 
         async function loadUserData() {
-            try {
-                if (window.firebaseDB && window.firebaseRef && window.firebaseGet) {
-                    const userRef = window.firebaseRef(window.firebaseDB, 'users/' + userId);
-                    const snapshot = await window.firebaseGet(userRef);
-                    
-                    if (snapshot.exists()) {
-                        userData = snapshot.val();
-                        // Migration pour les anciennes données
-                        if (userData.hearts === undefined) userData.hearts = 3;
-                        if (userData.lastHeartReset === undefined) userData.lastHeartReset = '';
-                        if (userData.lastHeartRegenTime === undefined) userData.lastHeartRegenTime = ''; // NOUVEAU
-                        if (userData.badgeProgress === undefined) userData.badgeProgress = {};
-                        if (userData.categoryStats === undefined) userData.categoryStats = {};
-                        if (userData.purchasedHearts === undefined) userData.purchasedHearts = 0;
-                    } else {
-                        userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
-                        const newCode = generateRecoveryCode();
-                        userData.recoveryCode = newCode; // ✅ FIX: Stocker en clair, pas hashé
-                        localStorage.setItem('recoveryCodePlain_' + userId, newCode);
-                        await saveUserData();
-                    }
-                    
-                    // ✅ FIX: Migration anciennes données - convertir hash en clair si besoin
-                    if (userData.recoveryCodeHash && !userData.recoveryCode) {
-                        // Ancien système avec hash → garder le hash mais impossible de restaurer
-                        // Le joueur doit copier son nouveau code
-                        const newCode = generateRecoveryCode();
-                        userData.recoveryCode = newCode;
-                        localStorage.setItem('recoveryCodePlain_' + userId, newCode);
-                        delete userData.recoveryCodeHash; // Supprimer ancien hash
-                        await saveUserData();
-                    }
-                    
-                    // Générer code si manquant (migration)
-                    if (!userData.recoveryCode) {
-                        const newCode = generateRecoveryCode();
-                        userData.recoveryCode = newCode; // ✅ FIX: En clair
-                        localStorage.setItem('recoveryCodePlain_' + userId, newCode);
-                        await saveUserData();
-                    }
-                    
+            // ✅ OFFLINE FIRST : Charger local IMMÉDIATEMENT sans attendre Firebase
+            const localData = localStorage.getItem('userData');
+            if (localData) {
+                try {
+                    userData = migrateUserData(JSON.parse(localData));
                     previousLevel = getLevelInfo(userData.points).min;
                     updateUI();
                     updateHeartsDisplay();
-                }
-            } catch (error) {
-                console.log('Mode local:', error);
-                const localData = localStorage.getItem('userData');
-                if (localData) {
-                    userData = JSON.parse(localData);
-                    if (userData.hearts === undefined) userData.hearts = 3;
-                    if (userData.lastHeartReset === undefined) userData.lastHeartReset = '';
-                    if (userData.lastHeartRegenTime === undefined) userData.lastHeartRegenTime = ''; // NOUVEAU
-                    if (userData.badgeProgress === undefined) userData.badgeProgress = {};
-                    if (userData.categoryStats === undefined) userData.categoryStats = {};
-                    if (userData.purchasedHearts === undefined) userData.purchasedHearts = 0;
-                    // ✅ FIX: Migration - convertir hash en clair
-                    if (userData.recoveryCodeHash && !userData.recoveryCode) {
+                } catch(e) { console.log('Erreur cache local:', e); }
+            }
+
+            // Sync Firebase en arrière-plan si online
+            if (isOnline && window.firebaseDB && window.firebaseRef && window.firebaseGet) {
+                try {
+                    const userRef = window.firebaseRef(window.firebaseDB, 'users/' + userId);
+                    const snapshot = await window.firebaseGet(userRef);
+                    if (snapshot.exists()) {
+                        const firebaseData = migrateUserData(snapshot.val());
+                        if (!localData || firebaseData.points >= userData.points) {
+                            userData = firebaseData;
+                            localStorage.setItem('userData', JSON.stringify(userData));
+                        }
+                    } else if (!localData) {
+                        userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
                         const newCode = generateRecoveryCode();
                         userData.recoveryCode = newCode;
                         localStorage.setItem('recoveryCodePlain_' + userId, newCode);
-                        delete userData.recoveryCodeHash;
-                        localStorage.setItem('userData', JSON.stringify(userData));
+                        await saveUserData();
+                    } else {
+                        await saveUserData();
                     }
-                    if (!userData.recoveryCode) {
+                    previousLevel = getLevelInfo(userData.points).min;
+                    updateUI();
+                    updateHeartsDisplay();
+                    needsSync = false;
+                    localStorage.setItem('needsSync', 'false');
+                    updateSyncBadge();
+                } catch (error) {
+                    console.log('Firebase indisponible, mode offline:', error);
+                    if (!localData) {
+                        userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
                         const newCode = generateRecoveryCode();
-                        userData.recoveryCode = newCode; // ✅ FIX: En clair
+                        userData.recoveryCode = newCode;
                         localStorage.setItem('recoveryCodePlain_' + userId, newCode);
                         localStorage.setItem('userData', JSON.stringify(userData));
+                        updateUI();
+                        updateHeartsDisplay();
                     }
-                } else {
-                    userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
-                    const newCode = generateRecoveryCode();
-                    userData.recoveryCode = newCode; // ✅ FIX: En clair
-                    localStorage.setItem('recoveryCodePlain_' + userId, newCode);
                 }
+            } else if (!localData) {
+                userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
+                const newCode = generateRecoveryCode();
+                userData.recoveryCode = newCode;
+                localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+                localStorage.setItem('userData', JSON.stringify(userData));
                 updateUI();
                 updateHeartsDisplay();
             }
@@ -2432,7 +2416,8 @@
                         coins: userData.coins,
                         correctAnswers: userData.correctAnswers || 0,
                         totalAnswers: userData.totalAnswers || 0,
-                        totalBadges: getTotalBadgesEarned() // CORRECT : vrai compte badges
+                        totalBadges: getTotalBadgesEarned(),
+                        likes: userData.likes || 0 // ✅ FIX : Synchroniser likes profil → classement
                     };
                     const leaderboardRef = window.firebaseRef(window.firebaseDB, 'leaderboard/' + userId);
                     await window.firebaseSet(leaderboardRef, leaderboardData);
@@ -3706,19 +3691,24 @@
                 }
             } catch(e) { console.log('Erreur suppression Firebase:', e); }
 
+            const choice = confirm('Compte supprimé !\n\nCliquez OK pour restaurer un compte existant.\nCliquez Annuler pour créer un nouveau compte.');
+            
+            // Stocker le choix AVANT d'effacer localStorage
+            const wantsRestore = choice;
+            
+            // Effacer tout le localStorage
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
                 keysToRemove.push(localStorage.key(i));
             }
             keysToRemove.forEach(k => localStorage.removeItem(k));
-
-            const choice = confirm('Compte supprimé !\n\nCliquez OK pour restaurer un compte existant.\nCliquez Annuler pour créer un nouveau compte.');
-            if (choice) {
-                location.reload();
-                setTimeout(() => showRestoreModal(), 1500);
-            } else {
-                location.reload();
+            
+            // Stocker intention après nettoyage
+            if (wantsRestore) {
+                localStorage.setItem('showRestoreOnLoad', 'true');
             }
+            
+            location.reload();
         }
 
         function resetData() {
@@ -4120,6 +4110,11 @@
                     break;
                 case 'culture_generale':
                     startQuiz('Culture générale', 'Culture Générale', 'culture-generale');
+                    break;
+                case 'explorer':
+                    // Explorateur : le joueur doit choisir ses catégories lui-même
+                    alert('🗺️ Défi Explorateur !\n\nTu dois jouer dans 3 thématiques DIFFÉRENTES.\nChoisis tes catégories une par une depuis l\'écran suivant.');
+                    showCategories();
                     break;
                 default:
                     // Défis généraux (parfait, rapide, endurant, savant, explorateur...) → mode mixte
