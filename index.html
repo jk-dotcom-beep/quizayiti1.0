@@ -1814,7 +1814,7 @@
         // Enregistrement du Service Worker pour PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/quizayiti1.0/service-worker.js')
+                navigator.serviceWorker.register('/service-worker.js')
                     .then(registration => {
                         console.log('✅ Service Worker enregistré:', registration.scope);
                     })
@@ -2262,7 +2262,45 @@
             await loadFriendRequests(); // Charger demandes d'amis
             updateFriendsBadge(); // Afficher badge si nouvelles demandes
             await checkPendingNotifications(); // ✅ Afficher notifications cœurs/jetons reçus
+            initPushNotifications(); // 🔔 Notifications locales
         }
+
+        // ===== SYSTÈME NOTIFICATIONS LOCALES =====
+        function initPushNotifications() {
+            if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+            // Demander permission après 15 secondes (pas agressif)
+            setTimeout(async () => {
+                if (Notification.permission === 'default') {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        scheduleNotifications();
+                    }
+                } else if (Notification.permission === 'granted') {
+                    scheduleNotifications();
+                }
+            }, 15000);
+        }
+
+        async function scheduleNotifications() {
+            if (!navigator.serviceWorker.controller) return;
+
+            const lastPlayed = userData.lastPlayed || '';
+            const lastQuestionsCount = parseInt(localStorage.getItem('lastQuestionsCount') || '0');
+
+            navigator.serviceWorker.controller.postMessage({
+                type: 'SCHEDULE_NOTIFICATIONS',
+                lastPlayed: lastPlayed,
+                lastQuestionsCount: lastQuestionsCount,
+                playerName: userData.name || 'Joueur'
+            });
+        }
+
+        // Sauvegarder nombre de questions en cache après chargement
+        function saveQuestionsCount(count) {
+            localStorage.setItem('lastQuestionsCount', count.toString());
+        }
+        // ===== FIN NOTIFICATIONS =====
 
         function initAudio() {
             if (typeof Tone !== 'undefined') {
@@ -4129,6 +4167,7 @@
                 // Sauvegarder dans le cache pour mode offline
                 localStorage.setItem('questionsCache', JSON.stringify(allQuestions));
                 localStorage.setItem('questionsCacheDate', new Date().toISOString());
+                saveQuestionsCount(allQuestions.length); // 🔔 Pour notif nouvelles questions
                 
                 console.log('✅ Questions chargées:', allQuestions.length);
                 return true;
