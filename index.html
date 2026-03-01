@@ -1776,6 +1776,7 @@
 
                 <button class="btn btn-secondary" onclick="showRestoreModal()">🔑 Restaurer mon compte</button>
                 <button class="btn btn-secondary" onclick="resetData()">🗑️ Réinitialiser</button>
+                <button class="btn btn-secondary" onclick="confirmDeleteAccount()" style="background: #dc2626; color: white; border: none; margin-top: 8px;">🗑️ Supprimer mon compte</button>
             </div>
         </div>
     </div>
@@ -2316,6 +2317,27 @@
                 }).toDestination();
                 violinSynth.volume.value = -35;
             }
+        }
+
+        function migrateUserData(data) {
+            if (data.hearts === undefined) data.hearts = 3;
+            if (data.lastHeartReset === undefined) data.lastHeartReset = '';
+            if (data.lastHeartRegenTime === undefined) data.lastHeartRegenTime = '';
+            if (data.badgeProgress === undefined) data.badgeProgress = {};
+            if (data.categoryStats === undefined) data.categoryStats = {};
+            if (data.purchasedHearts === undefined) data.purchasedHearts = 0;
+            if (data.recoveryCodeHash && !data.recoveryCode) {
+                const newCode = generateRecoveryCode();
+                data.recoveryCode = newCode;
+                localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+                delete data.recoveryCodeHash;
+            }
+            if (!data.recoveryCode) {
+                const newCode = generateRecoveryCode();
+                data.recoveryCode = newCode;
+                localStorage.setItem('recoveryCodePlain_' + userId, newCode);
+            }
+            return data;
         }
 
         async function loadUserData() {
@@ -3666,6 +3688,37 @@
             updateUI();
             document.getElementById('nameInput').value = '';
             alert('Nom changé avec succès ! ✅');
+        }
+
+        function confirmDeleteAccount() {
+            if (!confirm('⚠️ ATTENTION\n\nSupprimer votre compte effacera TOUTES vos données (points, badges, progression).\n\nÊtes-vous sûr ?')) return;
+            if (!confirm('Dernière confirmation : cette action est IRRÉVERSIBLE.\n\nContinuer ?')) return;
+            deleteAccount();
+        }
+
+        async function deleteAccount() {
+            try {
+                if (isOnline && window.firebaseDB && window.firebaseRef && window.firebaseRemove) {
+                    const userRef = window.firebaseRef(window.firebaseDB, 'users/' + userId);
+                    const leaderboardRef = window.firebaseRef(window.firebaseDB, 'leaderboard/' + userId);
+                    await window.firebaseRemove(userRef);
+                    await window.firebaseRemove(leaderboardRef);
+                }
+            } catch(e) { console.log('Erreur suppression Firebase:', e); }
+
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                keysToRemove.push(localStorage.key(i));
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+
+            const choice = confirm('Compte supprimé !\n\nCliquez OK pour restaurer un compte existant.\nCliquez Annuler pour créer un nouveau compte.');
+            if (choice) {
+                location.reload();
+                setTimeout(() => showRestoreModal(), 1500);
+            } else {
+                location.reload();
+            }
         }
 
         function resetData() {
