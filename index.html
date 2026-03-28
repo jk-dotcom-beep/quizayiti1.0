@@ -1842,9 +1842,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <script>
         // Configuration
-        const GOOGLE_SHEETS_API_KEY = 'AIzaSyA125rJg-7CExfMd9LePRGAQwS4bHMWoDQ';
-        const SPREADSHEET_ID = '1exBmy58PSeStY04L9-j3YHgrfnbVSYwB9Aw0cQ95FKI';
-        const SHEET_NAME = 'Questions';
+        // Questions chargées depuis questions.json local (offline-first)
 
         // Variables globales
         let userId = '';
@@ -2132,20 +2130,20 @@
 
         // Défis quotidiens (15 défis variés)
         const DAILY_CHALLENGES = [
-            { id: 'perfect', title: '🎯 Parfait', description: 'Obtiens 10/10 à un quiz', reward: 200, check: (data) => data.isPerfect },
-            { id: 'speed', title: '⚡ Rapide', description: 'Réponds à 8 questions en moins de 15s chacune', reward: 200, check: (data) => data.fastAnswers >= 8 },
-            { id: 'endurance', title: '🔥 Endurant', description: 'Joue 3 quiz d\'affilée', reward: 300, check: (data) => data.consecutiveGames >= 3 },
-            { id: 'precision', title: '🧠 Savant', description: 'Obtiens 80% minimum sur 2 quiz', reward: 250, check: (data) => data.highAccuracyGames >= 2 },
+            { id: 'perfect', title: '🎯 Parfait', description: 'Obtiens 10/10 à un quiz', reward: 100, check: (data) => data.isPerfect },
+            { id: 'speed', title: '⚡ Rapide', description: 'Réponds à 8 questions en moins de 15s chacune', reward: 100, check: (data) => data.fastAnswers >= 8 },
+            { id: 'endurance', title: '🔥 Endurant', description: 'Joue 3 quiz d\'affilée', reward: 150, check: (data) => data.consecutiveGames >= 3 },
+            { id: 'precision', title: '🧠 Savant', description: 'Obtiens 80% minimum sur 2 quiz', reward: 125, check: (data) => data.highAccuracyGames >= 2 },
             { id: 'culture_generale', title: '🌍 Érudit', description: 'Complète 1 quiz en Culture Générale', reward: 150, check: (data) => data.cultureGenerale >= 1 },
             { id: 'haiti_expert', title: '🇭🇹 Patriote', description: 'Complète 1 quiz en Culture Haïtienne', reward: 150, check: (data) => data.cultureHaitienne >= 1 },
-            { id: 'math_master', title: '🔢 Mathématicien', description: 'Fais 10 bonnes réponses en Maths', reward: 200, check: (data) => data.mathsCorrect >= 10 },
-            { id: 'science_fan', title: '🔬 Scientifique', description: 'Fais 10 bonnes réponses en Sciences', reward: 200, check: (data) => data.sciencesCorrect >= 10 },
-            { id: 'no_mistake', title: '💎 Impeccable', description: 'Fais un quiz sans aucune erreur', reward: 250, check: (data) => data.noMistake },
-            { id: 'explorer', title: '🗺️ Explorateur', description: 'Joue dans 3 thématiques différentes', reward: 300, check: (data) => data.differentCategories >= 3 },
-            { id: 'combo_master', title: '🎲 Combo Master', description: 'Réponds correctement à 5 questions d\'affilée', reward: 200, check: (data) => data.correctStreak >= 5 },
+            { id: 'math_master', title: '🔢 Mathématicien', description: 'Fais 10 bonnes réponses en Maths', reward: 100, check: (data) => data.mathsCorrect >= 10 },
+            { id: 'science_fan', title: '🔬 Scientifique', description: 'Fais 10 bonnes réponses en Sciences', reward: 100, check: (data) => data.sciencesCorrect >= 10 },
+            { id: 'no_mistake', title: '💎 Impeccable', description: 'Fais un quiz sans aucune erreur', reward: 125, check: (data) => data.noMistake },
+            { id: 'explorer', title: '🗺️ Explorateur', description: 'Joue dans 3 thématiques différentes', reward: 150, check: (data) => data.differentCategories >= 3 },
+            { id: 'combo_master', title: '🎲 Combo Master', description: 'Réponds correctement à 5 questions d\'affilée', reward: 100, check: (data) => data.correctStreak >= 5 },
             { id: 'early_bird', title: '🌅 Lève-tôt', description: 'Joue avant 9h du matin', reward: 150, check: (data) => data.earlyBird },
             { id: 'night_owl', title: '🌙 Noctambule', description: 'Joue après 22h', reward: 150, check: (data) => data.nightOwl },
-            { id: 'coins_collector', title: '💰 Collectionneur', description: 'Gagne 100 jetons en une session', reward: 300, check: (data) => data.sessionCoins >= 100 },
+            { id: 'coins_collector', title: '💰 Collectionneur', description: 'Gagne 30 jetons en une session', reward: 150, check: (data) => data.sessionCoins >= 30 },
             { id: 'unstoppable', title: '⚡ Inarrêtable', description: 'Joue 5 quiz en une session', reward: 500, check: (data) => data.consecutiveGames >= 5 }
         ];
 
@@ -3381,15 +3379,15 @@
 
         function showCoinsDetails() {
             // Jetons de base
-            const baseCoinsPerQuestion = 5;
-            const coinBonusPerFast = 2;
+            const baseCoinsPerQuestion = 2;
+            const coinBonusPerFast = 1;
             
             let detailsHTML = '<div class="points-section"><div class="points-section-title">Jetons de Base</div>';
             detailsHTML += `<div class="points-item"><span>${correctCount} bonnes réponses × ${baseCoinsPerQuestion} 🪙</span><span>+${correctCount * baseCoinsPerQuestion} 🪙</span></div>`;
             detailsHTML += '</div>';
             
             // Calcul approximatif des jetons rapides (en excluant le défi et le bonus parfait)
-            const perfectCoins = correctCount === currentQuestions.length ? 50 : 0;
+            const perfectCoins = correctCount === currentQuestions.length ? 25 : 0;
             const totalCoinsWithoutPerfectAndChallenge = sessionCoins - perfectCoins - sessionChallengeReward;
             const baseCoins = correctCount * baseCoinsPerQuestion;
             const fastCoins = totalCoinsWithoutPerfectAndChallenge - baseCoins;
@@ -3442,6 +3440,13 @@
             const shopCoinsEl = document.getElementById('shopCoinsCount');
             if (shopHeartsEl) shopHeartsEl.textContent = userData.hearts || 0;
             if (shopCoinsEl) shopCoinsEl.textContent = userData.coins || 0;
+        }
+
+        // PUBLICITÉ → JETONS (AdMob sera branché ici sur PC)
+        function watchAd() {
+            // TODO: Brancher AdMob Rewarded Ad ici sur PC
+            // Simulation temporaire — sera remplacé par vrai AdMob
+            alert('📺 Fonctionnalité pub bientôt disponible !\nReviens après la mise à jour. 🚀');
         }
 
         // CORRIGÉ : Limite 25 cœurs max
@@ -4193,45 +4198,18 @@
         }
 
         async function loadQuestions() {
-            // ✅ TOUJOURS recharger pour avoir nouvelles questions
-            // Ne pas return si allQuestions existe déjà
+            // ✅ Charger depuis questions.json local (offline-first)
+            if (allQuestions.length > 0) return true;
             
             try {
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}?key=${GOOGLE_SHEETS_API_KEY}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                const rows = data.values.slice(1);
-                allQuestions = rows.map(row => ({
-                    id: row[0],
-                    category: row[1],
-                    question: row[2],
-                    options: [row[3], row[4], row[5], row[6]],
-                    correctAnswer: row[7],
-                    explanation: row[8],
-                    difficulty: row[9] || 'Moyen'
-                }));
-                
-                // Sauvegarder dans le cache pour mode offline
-                localStorage.setItem('questionsCache', JSON.stringify(allQuestions));
-                localStorage.setItem('questionsCacheDate', new Date().toISOString());
-                saveQuestionsCount(allQuestions.length); // 🔔 Pour notif nouvelles questions
-                
-                console.log('✅ Questions chargées:', allQuestions.length);
+                const response = await fetch('./questions.json');
+                if (!response.ok) throw new Error('questions.json introuvable');
+                allQuestions = await response.json();
+                console.log('✅ Questions chargées depuis fichier local:', allQuestions.length);
                 return true;
             } catch (error) {
-                console.error('Erreur chargement questions:', error);
-                
-                // Essayer de charger depuis le cache (mode offline)
-                const cachedQuestions = localStorage.getItem('questionsCache');
-                if (cachedQuestions) {
-                    allQuestions = JSON.parse(cachedQuestions);
-                    const cacheDate = localStorage.getItem('questionsCacheDate');
-                    alert('📱 Mode hors ligne activé\nDernière mise à jour: ' + new Date(cacheDate).toLocaleDateString());
-                    return true;
-                }
-                
-                alert('❌ Erreur de connexion et aucun cache disponible.\nVérifiez votre connexion internet.');
+                console.error('Erreur chargement questions.json:', error);
+                alert('❌ Impossible de charger les questions.\nVérifiez que questions.json est bien présent.');
                 return false;
             }
         }
@@ -4369,8 +4347,8 @@
                 sessionBonusPoints += speedBonus;
                 
                 // ✅ DÉJÀ CORRECT : 5 jetons base + 2 bonus
-                const baseCoins = 5;
-                const coinBonus = timeLeft > (timerDuration - 15) ? 2 : 0;
+                const baseCoins = 2;
+                const coinBonus = timeLeft > (timerDuration - 15) ? 1 : 0;
                 sessionCoins += (baseCoins + coinBonus);
                 
                 if (timeLeft > (timerDuration - 15)) {
@@ -4566,9 +4544,9 @@
             if (isPerfect) {
                 const perfectBonus = 50;
                 sessionBonusPoints += perfectBonus;
-                sessionCoins += 50;
+                sessionCoins += 25;
                 userData.points += perfectBonus;
-                userData.coins += 50;
+                userData.coins += 25;
                 userData.perfectGames = (userData.perfectGames || 0) + 1;
             }
             
@@ -4845,6 +4823,13 @@
                     <div class="hearts-regen-timer" id="heartsRegenTimer">⏱️ Chargement...</div>
                 </div>
                 <div class="hearts-packs">
+                    <!-- BOUTON PUB → JETONS -->
+                    <div class="pack-card" onclick="watchAd()" style="background: linear-gradient(135deg, #fef3c7, #fbbf24); border-color: #f59e0b;">
+                        <div class="pack-hearts">📺</div>
+                        <div style="font-weight: 700; margin-bottom: 5px; color: #92400e;">Regarder une pub</div>
+                        <div class="pack-price" style="color: #92400e;">+75 🪙 Gratuit !</div>
+                        <div style="font-size: 11px; color: #78350f; margin-top: 5px;">Regarde une courte vidéo</div>
+                    </div>
                     <div class="pack-card" onclick="buyHearts(1, 150)">
                         <div class="pack-hearts">❤️</div>
                         <div style="font-weight: 600; margin-bottom: 5px;">1 Vie</div>

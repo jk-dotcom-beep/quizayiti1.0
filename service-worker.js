@@ -1,9 +1,10 @@
-// QuizAyiti Service Worker - Version 2.0 (Notifications intelligentes)
-const CACHE_NAME = 'quizayiti-v2';
+// QuizAyiti Service Worker - Version 3.0 (Offline-first, questions.json local)
+const CACHE_NAME = 'quizayiti-v3';
 const urlsToCache = [
   '/quizayiti1.0/',
   '/quizayiti1.0/index.html',
   '/quizayiti1.0/manifest.json',
+  '/quizayiti1.0/questions.json',
   '/quizayiti1.0/icon-192.png',
   '/quizayiti1.0/icon-512.png'
 ];
@@ -24,9 +25,6 @@ const MESSAGES = {
   inactive7: [
     { title: "🚨 Tu nous manques !", body: "7 jours d'absence... Reviens défendre ta place !" },
     { title: "⏰ Il n'est pas trop tard !", body: "Tes badges et points t'attendent. Reviens jouer !" }
-  ],
-  newQuestions: [
-    { title: "🆕 Nouvelles questions disponibles !", body: "De nouvelles questions ont été ajoutées. Teste tes connaissances !" }
   ]
 };
 
@@ -43,7 +41,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// ACTIVATION
+// ACTIVATION - Supprimer anciens caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(names => Promise.all(
@@ -53,10 +51,26 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// FETCH
+// FETCH - Offline-first pour fichiers locaux, network-first pour Firebase
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  if (url.hostname.includes('firebase') || url.hostname.includes('googleapis') || url.hostname.includes('gstatic')) return;
+
+  // Firebase, gstatic → toujours réseau (pas de cache)
+  if (url.hostname.includes('firebase') || url.hostname.includes('gstatic')) return;
+
+  // questions.json → network-first pour avoir les mises à jour, fallback cache
+  if (url.pathname.includes('questions.json')) {
+    event.respondWith(
+      fetch(event.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return res;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Autres fichiers → cache-first
   event.respondWith(
     caches.match(event.request).then(response => {
       if (response) return response;
@@ -79,34 +93,9 @@ self.addEventListener('message', event => {
   if (event.data.type === 'SKIP_WAITING') self.skipWaiting();
   if (event.data.type === 'SCHEDULE_NOTIFICATIONS') {
     self.notifData = event.data;
-    checkNewQuestions(event.data.lastQuestionsCount);
     checkAndSendNotification();
   }
 });
-
-// VÉRIFIER NOUVELLES QUESTIONS
-async function checkNewQuestions(lastCount) {
-  if (!lastCount || lastCount === 0) return;
-  try {
-    const SPREADSHEET_ID = '1exBmy58PSeStY04L9-j3YHgrfnbVSYwB9Aw0cQ95FKI';
-    const API_KEY = 'AIzaSyA125rJg-7CExfMd9LePRGAQwS4bHMWoDQ';
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Questions!A:A?key=${API_KEY}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    const currentCount = data.values ? data.values.length - 1 : 0;
-    if (currentCount > lastCount) {
-      const msg = getRandomMessage('newQuestions');
-      await self.registration.showNotification(msg.title, {
-        body: msg.body,
-        icon: '/quizayiti1.0/icon-192.png',
-        badge: '/quizayiti1.0/icon-192.png',
-        tag: 'new-questions',
-        vibrate: [200, 100, 200],
-        data: { url: '/quizayiti1.0/' }
-      });
-    }
-  } catch(e) { console.log('[SW] Vérif questions:', e); }
-}
 
 // ENVOYER NOTIFICATION RAPPEL
 async function checkAndSendNotification() {
@@ -118,7 +107,6 @@ async function checkAndSendNotification() {
   const daysSince = lastPlayed ? Math.floor((now - lastPlayed) / 86400000) : 999;
   const hoursSinceLast = (now - self.lastNotifDate) / 3600000;
 
-  // Max 1 notification toutes les 20h
   if (hoursSinceLast < 20) return;
 
   let msg = null;
@@ -153,7 +141,7 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-// PUSH (compatible FCM/OneSignal futur)
+// PUSH (compatible FCM futur)
 self.addEventListener('push', event => {
   if (!event.data) return;
   const data = event.data.json();
