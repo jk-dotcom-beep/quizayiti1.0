@@ -638,6 +638,14 @@
             font-size: 15px;
         }
 
+        /* Bouton de piste musicale active */
+        .track-active {
+            border-color: #3b82f6 !important;
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe) !important;
+            color: #1e40af !important;
+            font-weight: 700 !important;
+        }
+
         .settings-section {
             margin-bottom: 20px;
         }
@@ -1748,6 +1756,32 @@
                             <div class="toggle-slider"></div>
                         </div>
                     </div>
+                    <!-- ✅ MUSIQUE DE FOND -->
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>🎵</span>
+                            <span>Musique de fond</span>
+                        </div>
+                        <div class="toggle-switch" id="bgMusicToggle" onclick="toggleBgMusic()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                        <div class="setting-label" style="margin-bottom: 4px;">
+                            <span>🎼</span>
+                            <span>Choisir la musique</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; width: 100%;">
+                            <button id="trackTibetan" onclick="changeBgMusicTrack('tibetan')" 
+                                style="flex: 1; padding: 8px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.3s;">
+                                🪈 Flûte Tibétaine
+                            </button>
+                            <button id="trackNature" onclick="changeBgMusicTrack('nature')" 
+                                style="flex: 1; padding: 8px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.3s;">
+                                🌿 Nature Relaxante
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="settings-section">
@@ -1907,6 +1941,9 @@
         let pianoSynth;
         let violinSynth;
         let soundEnabled = false;
+        let bgMusicEnabled = false;
+        let bgMusicTrack = 'tibetan'; // 'tibetan' ou 'nature'
+        let bgAudio = null;
         let vibrationEnabled = true;
         let timerDuration = 30;
 
@@ -2344,6 +2381,9 @@
         }
 
         async function loadUserData() {
+            // ✅ ANTI-FANTÔME : Si une restauration est en attente, on ne crée PAS de nouveau compte Firebase
+            const restorePending = localStorage.getItem('showRestoreOnLoad') === 'true';
+
             // ✅ OFFLINE FIRST : Charger local IMMÉDIATEMENT sans attendre Firebase
             const localData = localStorage.getItem('userData');
             if (localData) {
@@ -2366,13 +2406,14 @@
                             userData = firebaseData;
                             localStorage.setItem('userData', JSON.stringify(userData));
                         }
-                    } else if (!localData) {
+                    } else if (!localData && !restorePending) {
+                        // ✅ FIX FANTÔME : Créer un nouveau compte SEULEMENT si aucune restauration en attente
                         userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
                         const newCode = generateRecoveryCode();
                         userData.recoveryCode = newCode;
                         localStorage.setItem('recoveryCodePlain_' + userId, newCode);
                         await saveUserData();
-                    } else {
+                    } else if (!restorePending) {
                         await saveUserData();
                     }
                     previousLevel = getLevelInfo(userData.points).min;
@@ -2383,7 +2424,8 @@
                     updateSyncBadge();
                 } catch (error) {
                     console.log('Firebase indisponible, mode offline:', error);
-                    if (!localData) {
+                    if (!localData && !restorePending) {
+                        // ✅ FIX FANTÔME : Même logique en mode offline
                         userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
                         const newCode = generateRecoveryCode();
                         userData.recoveryCode = newCode;
@@ -2393,7 +2435,8 @@
                         updateHeartsDisplay();
                     }
                 }
-            } else if (!localData) {
+            } else if (!localData && !restorePending) {
+                // ✅ FIX FANTÔME : Même logique sans connexion
                 userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
                 const newCode = generateRecoveryCode();
                 userData.recoveryCode = newCode;
@@ -2426,15 +2469,16 @@
         }
 
         async function saveUserData() {
-            // ===== SYSTÈME ANTI-TRICHE =====
-            // CORRIGÉ : Valeurs max réalistes par partie
+            // ===== SYSTÈME ANTI-TRICHE (compatible pubs) =====
             const maxPointsPerGame = 120; // 5 pts × 10 Q + 2 bonus × 10 + 50 perfect
-            const maxCoinsPerGame = 120; // 5 jetons × 10 Q + 2 bonus × 10 + 50 perfect ✅ CORRIGÉ
+            const maxCoinsPerGame = 120;  // identique pour les jetons de jeu
             
-            // Vérifier si les valeurs sont suspectes (marge de sécurité × 1.5)
-            const totalGames = userData.totalGames || 1; // Au moins 1 pour éviter division par 0
+            const totalGames = userData.totalGames || 1;
             const maxPointsTheoriques = maxPointsPerGame * totalGames * 1.5;
-            const maxCoinsTheoriques = maxCoinsPerGame * totalGames * 1.5;
+            
+            // ✅ FIX : inclure les jetons gagnés via pubs pour éviter faux positifs
+            const adCoinsEarned = userData.adCoinsEarned || 0;
+            const maxCoinsTheoriques = (maxCoinsPerGame * totalGames * 1.5) + adCoinsEarned;
             
             if (userData.points > maxPointsTheoriques) {
                 console.warn('⚠️ Points suspects détectés - Réinitialisation');
@@ -2443,7 +2487,7 @@
             
             if (userData.coins > maxCoinsTheoriques) {
                 console.warn('⚠️ Jetons suspects détectés - Réinitialisation');
-                userData.coins = Math.floor(maxCoinsPerGame * totalGames);
+                userData.coins = Math.floor((maxCoinsPerGame * totalGames) + adCoinsEarned);
             }
             // ===== FIN ANTI-TRICHE =====
             
@@ -3446,6 +3490,12 @@
         function watchAd() {
             // TODO: Brancher AdMob Rewarded Ad ici sur PC
             // Simulation temporaire — sera remplacé par vrai AdMob
+            // ✅ FIX ANTI-TRICHE : on track les jetons pub séparément
+            const coinsFromAd = 75;
+            userData.adCoinsEarned = (userData.adCoinsEarned || 0) + coinsFromAd;
+            userData.coins = (userData.coins || 0) + coinsFromAd;
+            saveUserData();
+            updateUI();
             alert('📺 Fonctionnalité pub bientôt disponible !\nReviens après la mise à jour. 🚀');
         }
 
@@ -3637,6 +3687,14 @@
 
             timerDuration = parseInt(localStorage.getItem('timerDuration') || '30');
             document.getElementById('timerDuration').value = timerDuration;
+
+            // ✅ Musique de fond
+            bgMusicEnabled = localStorage.getItem('bgMusicEnabled') === 'true';
+            bgMusicTrack = localStorage.getItem('bgMusicTrack') || 'tibetan';
+            document.getElementById('bgMusicToggle').classList.toggle('active', bgMusicEnabled);
+            document.getElementById('trackTibetan').classList.toggle('track-active', bgMusicTrack === 'tibetan');
+            document.getElementById('trackNature').classList.toggle('track-active', bgMusicTrack === 'nature');
+            initBgMusic();
         }
 
         function toggleSound() {
@@ -3644,6 +3702,48 @@
             localStorage.setItem('soundEnabled', soundEnabled);
             document.getElementById('soundToggle').classList.toggle('active', soundEnabled);
         }
+
+        // ===== MUSIQUE DE FOND =====
+        function initBgMusic() {
+            const src = bgMusicTrack === 'tibetan' ? 'music-tibetan.mp3' : 'music-nature.mp3';
+            if (bgAudio) { bgAudio.pause(); bgAudio = null; }
+            bgAudio = new Audio(src);
+            bgAudio.loop = true;
+            bgAudio.volume = 0.35;
+            if (bgMusicEnabled) {
+                bgAudio.play().catch(e => console.log('Autoplay bloqué, attente interaction:', e));
+            }
+        }
+
+        function toggleBgMusic() {
+            bgMusicEnabled = !bgMusicEnabled;
+            localStorage.setItem('bgMusicEnabled', bgMusicEnabled);
+            document.getElementById('bgMusicToggle').classList.toggle('active', bgMusicEnabled);
+            if (bgMusicEnabled) {
+                if (!bgAudio) initBgMusic();
+                bgAudio.play().catch(e => console.log('Autoplay:', e));
+            } else {
+                if (bgAudio) bgAudio.pause();
+            }
+        }
+
+        function changeBgMusicTrack(track) {
+            bgMusicTrack = track;
+            localStorage.setItem('bgMusicTrack', track);
+            // Mettre à jour l'affichage des boutons
+            document.getElementById('trackTibetan').classList.toggle('track-active', track === 'tibetan');
+            document.getElementById('trackNature').classList.toggle('track-active', track === 'nature');
+            initBgMusic();
+        }
+
+        // Démarrer la musique après la première interaction utilisateur
+        function unlockBgMusic() {
+            if (bgMusicEnabled && bgAudio && bgAudio.paused) {
+                bgAudio.play().catch(e => {});
+            }
+        }
+        document.addEventListener('click', unlockBgMusic, { once: true });
+        // ===== FIN MUSIQUE DE FOND =====
 
         function toggleVibration() {
             vibrationEnabled = !vibrationEnabled;
