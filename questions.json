@@ -114,7 +114,7 @@
   {
     "id": "q009",
     "category": "Programme scolaire - Mathématiques",
-    "question": "Draapnpso urtn amu apgraixs iinn,i tuianl v?élo coûte 34 000 gourdes et il est soldé au prix de 25 000 gourdes. Quel est le pourcentage de la réduction par",
+    "question": "Dans un magasin, un vélo coûte 34 000 gourdes et il est soldé au prix de 25 000 gourdes. Quel est le pourcentage de la réduction par rapport au prix initial ?",
     "options": [
       "7,35%",
       "36%",
@@ -2231,8 +2231,8 @@
     "question": "« Kreyòl pale, kreyòl konprann » - Ki sans pwofon ekspresyon sa a genyen ?",
     "options": [
       "Pale kreyòl se yon dwa pou tout ayisyen",
-      "Pa chache konplike sa ki senp, di sa ou vle di dir",
-      "èKkrteemyòal nse lang ki pi fasil pou aprann",
+      "Pa chache konplike sa ki senp, di sa ou vle di dirèkteman",
+      "Kreyòl se lang ki pi fasil pou aprann",
       "Pale ak moun nan lang yo toujou bay bon rezilta"
     ],
     "correctAnswer": "B",
@@ -2312,9 +2312,9 @@
   {
     "id": "q166",
     "category": "Programme scolaire - Sciences (Physique)",
-    "question": "Quand deux corps ont des températures différentes, qu’est-ce qui explique que la chaleur passe d’un corps à l’autre jusqu’à ce qu’ils aient la",
+    "question": "Quand deux corps ont des températures différentes, qu'est-ce qui explique que la chaleur passe d'un corps à l'autre jusqu'à ce qu'ils aient la même température ?",
     "options": [
-      "Tmraênmsefe tret mthpeérrmatiquuree ?",
+      "Transfert thermique",
       "Loi de Hooke",
       "Énergie cinétique",
       "Second principe de la thermodynamique"
@@ -5241,8 +5241,8 @@
     "question": "Quel est l'objectif principal de l'Accord de Paris sur le climat ?",
     "options": [
       "Éliminer le nucléaire mondial",
-      "Limiter le réchauffement climatique bien en des",
-      "sIonutesr ddeir e2 °leCs énergies fossiles",
+      "Limiter le réchauffement climatique bien en dessous de 2°C",
+      "Interdire les énergies fossiles immédiatement",
       "Protéger les forêts tropicales"
     ],
     "correctAnswer": "B",
@@ -5352,8 +5352,8 @@
     "category": "Programme scolaire - Communication créole",
     "question": "Ki sans pwovèb « Dèyè mòn gen mòn » genyen ?",
     "options": [
-      "Nan lavi, toujou gen plis defi ak obstak pase sa n",
-      "oPue ywi Aè yaiktil ègen anpil bèl mòn pou dekouvri",
+      "Nan lavi, toujou gen plis defi ak obstak pase sa nou panse",
+      "Peyi Ayiti gen anpil bèl mòn pou dekouvri",
       "Mache nan mòn se yon bon egzèsis fizik",
       "Dèyè kay vwazen toujou gen bèl jaden"
     ],
@@ -5367,9 +5367,9 @@
     "question": "Ki sa mo « konbit » vle di nan kilti ayisyen ?",
     "options": [
       "Yon seremoni relijyè tradisyonèl",
-      "Yon fòm travay kolektif kote vwazen ak zanmi ed",
-      "eYo yno umna lnòjte s easnp yeosy paal kpee yyoe prepare pou fèt nasyo",
-      "nYaoln gwoup mizisyen ki jwe nan maryaj"
+      "Yon fòm travay kolektif kote vwazen ak zanmi ede youn lòt",
+      "Yon manje espesyal ke yo prepare pou fèt nasyonal",
+      "Yon gwoup mizisyen ki jwe nan maryaj"
     ],
     "correctAnswer": "B",
     "explanation": "Konbit se yon pratik kominotè ki fò ann Ayiti kote moun yo reyini pou ede youn lòt fè gwo travay tankou plante, rekòlte oswa bati.",
@@ -5382,8 +5382,8 @@
     "options": [
       "Bourik se pi bon bèt travay pase chwal",
       "Chwal ak bourik pa ka travay nan menm kote",
-      "Se yon enjistis lè yon moun fè tout travay la pan",
-      "dTarnav yaoyn d liò tto purjoanu tboauyt b lwona nrej zaiklt baenefis yo"
+      "Se yon enjistis lè yon moun fè tout travay la pandan yon lòt pran tout benefis yo",
+      "Travay di toujou bay bon rezilta"
     ],
     "correctAnswer": "C",
     "explanation": "Pwovèb sa a denonse enjistis sosyal la — moun ki travay di yo pa toujou jwenn rekonpans yo, pandan moun ki pa travay yo pran tout kredi a.",
@@ -5408,8 +5408,8 @@
     "category": "Programme scolaire - Communication créole",
     "question": "Pwovèb « Bay kou bliye, pote mak sonje » vle di :",
     "options": [
-      "Moun ki fè mal la fasil bliye, men moun ki soufri",
-      "mKoaul lfaiz siko nkijtee l mpoauk ploènmtaannan sou kò moun toujou",
+      "Moun ki fè mal la fasil bliye, men moun ki soufri a sonje toujou",
+      "Kou fizik kite mak pèmanan sou kò moun toujou",
       "Pi bon bagay se bliye move souvni yo rapid rapid",
       "Pote mak sou kò ou se yon siy fòs"
     ],
@@ -5436,10 +5436,10 @@
     "category": "Programme scolaire - Communication créole",
     "question": "Pwovèb « Kouri pou lapli, tonbe nan larivyè » vle di :",
     "options": [
-      "Lapli toujou ka mennen gwo inondasyon ann Ay",
-      "itLiè tan an move, pi bon pou rete anndan kay",
-      "Lè yon moun eseye kouri kite yon pwoblèm, li k",
-      "aR tiovnybèe y on akno uyloen p pi iv gitw lèo lpawploi btolènmbe anpil"
+      "Lapli toujou ka mennen gwo inondasyon ann Ayiti",
+      "Lè tan an move, pi bon pou rete anndan kay",
+      "Lè yon moun eseye kouri kite yon pwoblèm, li ka tonbe nan yon lòt ki pi gwo",
+      "Rivyè yo ka vin pi danjere lè lapli tonbe anpil"
     ],
     "correctAnswer": "C",
     "explanation": "Pwovèb sa a avèti moun yo ke pafwa solisyon yo chache a ka pi danjere pase pwoblèm orijinal la. Li ankouraje refleksyon anvan aksyon.",
@@ -5464,10 +5464,10 @@
     "category": "Programme scolaire - Communication créole",
     "question": "Pwovèb « Sèl pa vante tèt li di li sale » vle di :",
     "options": [
-      "Sèl se youn nan pi bon kondiman nan kwizin ayi",
-      "sMyeonun ki gen vrè valè ak konpetans pa bezwen v",
-      "aPnat eja tnèmt y doi, mtraovvaey b yaog apya lseo puo tuè ty oou devan lòt mo",
-      "uMnodesti se yon feblès nan sosyete"
+      "Sèl se youn nan pi bon kondiman nan kwizin ayisyen",
+      "Moun ki gen vrè valè ak konpetans pa bezwen vante tèt yo",
+      "Pa janm di travay yon moun pa bon devan lòt moun",
+      "Modesti se yon feblès nan sosyete"
     ],
     "correctAnswer": "B",
     "explanation": "Pwovèb sa a fè lwanj modesti. Yon moun ki gen vrè kalite pa bezwen pwoklame l — lòt moun wè l nan aksyon li.",
@@ -5478,12 +5478,12 @@
     "category": "Programme scolaire - Communication créole",
     "question": "Ki diferans ki genyen ant mo « anvi » ak mo « bezwen » nan kreyòl ayisyen ?",
     "options": [
-      "« Anvi » se yon nesesite ijan, « bezwen » se yon",
-      "sSeen dpe d mezoi sinonim ki vle di menm bagay la nan t",
-      "o«u tB keozwnteènk s» endike yon nesesite reyèl, tandiske",
-      "«« a Anvniv »i »e ksèsplmrimane i tyiolinze d peozui o psawlea dyoe nm aatnrajek,s y«o bnez"
+      "« Anvi » se yon nesesite ijan, « bezwen » se yon dezi senp",
+      "Se de sinonim ki vle di menm bagay la nan tout kontèks",
+      "« Bezwen » endike yon nesesite reyèl, tandiske « anvi » eksprime yon dezi oswa atirante",
+      "« Anvi » eksprime yon obligasyon, « bezwen » se yon santiman"
     ],
-    "correctAnswer": "wCen » pou tout lòt ba",
+    "correctAnswer": "C",
     "explanation": "Egzanp : « Mwen bezwen dlo pou viv » (nesesite) kont « Mwen anvi manje fri » (dezi). Konprann diferans sa a ede pale kreyòl kòrèkteman.",
     "difficulty": "Difficile"
   },
@@ -5549,9 +5549,9 @@
     "question": "Pwovèb « Chak koukouy klere pou je l » vle di :",
     "options": [
       "Ensèk yo ka klere nan nwit la san limyè",
-      "Chak moun travay pou pwòp enterè pa l anvan t",
-      "oLuatn lnòuti tb aseg amyoman pou refleksyon ak meditasyo",
-      "nPiti piti zwazo fè nich li"
+      "Chak moun travay pou pwòp enterè pa l anvan tout lòt",
+      "Lannwit bay yon bon moman pou refleksyon ak meditasyon",
+      "Piti piti zwazo fè nich li"
     ],
     "correctAnswer": "B",
     "explanation": "Pwovèb sa a di ke chak moun natirèlman pran swen tèt li an premye. Li pa nesesèman negatif, li rekonèt reyalite imen an.",
@@ -5618,10 +5618,10 @@
     "category": "Programme scolaire - Communication créole",
     "question": "Pwovèb « Ranje do pa vle di bòs mouri », Ki sans ki kache nan li ?",
     "options": [
-      "Mete kò ou an fòm pa vle di ou an bòn sante nè",
-      "tAparans pa ka twompe tout moun pou toutan",
-      "Yon sitiyasyon ki parèt amelyore an deyò pa vle",
-      "dTir pawvaoyb blèòms s feo nyodnam maenttyael kyio t roeuzjoouud gen difikilte"
+      "Mete kò ou an fòm pa vle di ou an bòn sante nèt",
+      "Aparans pa ka twompe tout moun pou toutan",
+      "Yon sitiyasyon ki parèt amelyore an deyò pa vle di pwoblèm fon yo rezoud",
+      "Travay bòs yo toujou rezoud pwoblèm materyèl yo"
     ],
     "correctAnswer": "C",
     "explanation": "Pwovèb sa a avèti nou ke lè yon bagay parèt pi bèl oswa amelyore an deyò, sa pa vle di pwoblèm fon yo rezoud. Li koresponn ak lide « pa jije liv la pa kouvèti l ».",

@@ -4531,8 +4531,8 @@
             showQuestion();
         }
 
-        function startTimer() {
-            timeLeft = timerDuration;
+        function startTimer(resumeTime = null) {
+            timeLeft = resumeTime !== null ? resumeTime : timerDuration;
             const timerEl = document.getElementById('timer');
             timerEl.textContent = timeLeft;
             timerEl.classList.remove('warning');
@@ -4574,8 +4574,7 @@
             quizPaused = false;
             hideAllScreens();
             document.querySelector('.quiz-screen').classList.add('active');
-            timeLeft = pausedTime;
-            startTimer();
+            startTimer(pausedTime);
         }
 
         function restartQuiz() {
