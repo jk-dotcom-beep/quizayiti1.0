@@ -1713,7 +1713,7 @@
                 <div class="your-rank-section" id="yourRankSection" style="display: none;">
                     <div class="your-rank-title">TON RANG</div>
                     <div class="your-rank-info" id="yourRankInfo">#15 - Kenley</div>
-                    <div class="player-stats" id="yourRankStats">890 pts • 450 🪙</div>
+                    <div class="player-stats" id="yourRankStats">890 pts</div>
                     <div class="your-rank-message" id="yourRankMessage">↑ Continue ! Plus que 340 pts pour le Top 10 !</div>
                 </div>
             </div>
@@ -1771,14 +1771,18 @@
                             <span>🎼</span>
                             <span>Choisir la musique</span>
                         </div>
-                        <div style="display: flex; gap: 8px; width: 100%;">
-                            <button id="trackTibetan" onclick="changeBgMusicTrack('tibetan')" 
-                                style="flex: 1; padding: 8px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.3s;">
-                                🪈 Flûte Tibétaine
+                        <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                            <button id="trackUncatchable" onclick="changeBgMusicTrack('uncatchable')" 
+                                style="width: 100%; padding: 8px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.3s;">
+                                ⚡ Uncatchable
                             </button>
-                            <button id="trackNature" onclick="changeBgMusicTrack('nature')" 
-                                style="flex: 1; padding: 8px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.3s;">
-                                🌿 Nature Relaxante
+                            <button id="trackInspiring" onclick="changeBgMusicTrack('inspiring')" 
+                                style="width: 100%; padding: 8px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.3s;">
+                                🌟 Inspiring Journey
+                            </button>
+                            <button id="trackJuggernaut" onclick="changeBgMusicTrack('juggernaut')" 
+                                style="width: 100%; padding: 8px; border-radius: 8px; border: 2px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.3s;">
+                                🥁 Juggernaut
                             </button>
                         </div>
                     </div>
@@ -1942,7 +1946,7 @@
         let violinSynth;
         let soundEnabled = false;
         let bgMusicEnabled = false;
-        let bgMusicTrack = 'tibetan'; // 'tibetan' ou 'nature'
+        let bgMusicTrack = 'uncatchable'; // 'uncatchable', 'inspiring' ou 'juggernaut'
         let bgAudio = null;
         let vibrationEnabled = true;
         let timerDuration = 30;
@@ -2454,11 +2458,10 @@
                     const leaderboardData = {
                         name: userData.name,
                         points: userData.points,
-                        coins: userData.coins,
                         correctAnswers: userData.correctAnswers || 0,
                         totalAnswers: userData.totalAnswers || 0,
                         totalBadges: getTotalBadgesEarned(),
-                        likes: userData.likes || 0 // ✅ FIX : Synchroniser likes profil → classement
+                        likes: userData.likes || 0
                     };
                     const leaderboardRef = window.firebaseRef(window.firebaseDB, 'leaderboard/' + userId);
                     await window.firebaseSet(leaderboardRef, leaderboardData);
@@ -3690,10 +3693,11 @@
 
             // ✅ Musique de fond
             bgMusicEnabled = localStorage.getItem('bgMusicEnabled') === 'true';
-            bgMusicTrack = localStorage.getItem('bgMusicTrack') || 'tibetan';
+            bgMusicTrack = localStorage.getItem('bgMusicTrack') || 'uncatchable';
             document.getElementById('bgMusicToggle').classList.toggle('active', bgMusicEnabled);
-            document.getElementById('trackTibetan').classList.toggle('track-active', bgMusicTrack === 'tibetan');
-            document.getElementById('trackNature').classList.toggle('track-active', bgMusicTrack === 'nature');
+            document.getElementById('trackUncatchable').classList.toggle('track-active', bgMusicTrack === 'uncatchable');
+            document.getElementById('trackInspiring').classList.toggle('track-active', bgMusicTrack === 'inspiring');
+            document.getElementById('trackJuggernaut').classList.toggle('track-active', bgMusicTrack === 'juggernaut');
             initBgMusic();
         }
 
@@ -3705,7 +3709,12 @@
 
         // ===== MUSIQUE DE FOND =====
         function initBgMusic() {
-            const src = bgMusicTrack === 'tibetan' ? 'music-tibetan.mp3' : 'music-nature.mp3';
+            const tracks = {
+                'uncatchable': 'music-uncatchable.mp3',
+                'inspiring':   'music-inspiring.mp3',
+                'juggernaut':  'music-juggernaut.mp3'
+            };
+            const src = tracks[bgMusicTrack] || 'music-uncatchable.mp3';
             if (bgAudio) { bgAudio.pause(); bgAudio = null; }
             bgAudio = new Audio(src);
             bgAudio.loop = true;
@@ -3730,9 +3739,9 @@
         function changeBgMusicTrack(track) {
             bgMusicTrack = track;
             localStorage.setItem('bgMusicTrack', track);
-            // Mettre à jour l'affichage des boutons
-            document.getElementById('trackTibetan').classList.toggle('track-active', track === 'tibetan');
-            document.getElementById('trackNature').classList.toggle('track-active', track === 'nature');
+            document.getElementById('trackUncatchable').classList.toggle('track-active', track === 'uncatchable');
+            document.getElementById('trackInspiring').classList.toggle('track-active', track === 'inspiring');
+            document.getElementById('trackJuggernaut').classList.toggle('track-active', track === 'juggernaut');
             initBgMusic();
         }
 
@@ -4770,7 +4779,7 @@
                             <div class="rank gold">1</div>
                             <div class="player-info">
                                 <div class="player-name">${getLevelInfo(userData.points).medal} ${userData.name} (Toi)</div>
-                                <div class="player-stats">${userData.points} pts • ${userData.coins} 🪙</div>
+                                <div class="player-stats">${userData.points} pts</div>
                             </div>
                         </div>
                     `;
@@ -4799,7 +4808,7 @@
                             <div class="rank ${rankClass}">${index + 1}</div>
                             <div class="player-info" onclick="showPlayerDetails('${user.id}', '${user.name}', ${user.points}, ${user.correctAnswers || 0}, ${user.totalAnswers || 0}, ${user.totalBadges || 0})">
                                 <div class="player-name">${level.medal} ${user.name} ${isYou ? '(Toi)' : ''}</div>
-                                <div class="player-stats">${user.points} pts • ${user.coins} 🪙 • <span style="color: #ef4444;">👍 ${likes}</span></div>
+                                <div class="player-stats">${user.points} pts • <span style="color: #ef4444;">👍 ${likes}</span></div>
                             </div>
                             ${!isYou ? `<button class="btn btn-small btn-success" onclick="event.stopPropagation(); likeUser('${user.id}', '${user.name}')" style="margin-left: auto;">👍</button>` : ''}
                         </div>
@@ -4811,7 +4820,7 @@
                     const pointsToTop10 = top10[9].points - yourData.points + 1;
                     yourRankSection.style.display = 'block';
                     document.getElementById('yourRankInfo').textContent = `#${yourRank} - ${yourData.name}`;
-                    document.getElementById('yourRankStats').textContent = `${yourData.points} pts • ${yourData.coins} 🪙`;
+                    document.getElementById('yourRankStats').textContent = `${yourData.points} pts`;
                     document.getElementById('yourRankMessage').textContent = `↑ Continue ! Plus que ${pointsToTop10} pts pour le Top 10 !`;
                 } else {
                     yourRankSection.style.display = 'none';
