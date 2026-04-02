@@ -74,10 +74,10 @@
     "category": "Programme scolaire - Mathématiques",
     "question": "Si un point M se trouve à égale distance des extrémités d'un segment [AB], alors où se trouve le point M ?",
     "options": [
-      "S[AuBr ]u enne Ad.roite perpendiculaire au segment",
-      "S[AuBr ]u enne Bd.roite perpendiculaire au segment",
-      "S[AuBr ]u enne sdorno imtei lpieeurp.endiculaire au segment",
-      "Sseugr muneen td [rAoBit]e. qui n'est pas perpendiculaire au"
+      "Sur une droite parallèle au segment [AB]",
+      "Sur une droite quelconque passant par A",
+      "Sur la médiatrice du segment [AB]",
+      "Sur un segment qui n'est pas perpendiculaire à [AB]"
     ],
     "correctAnswer": "C",
     "explanation": "Le point équidistant des extrémités d'un segment se trouve sur la médiatrice, perpendiculaire au milieu du segment.",

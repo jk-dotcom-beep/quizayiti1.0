@@ -2471,7 +2471,7 @@
         async function saveUserData() {
             // ===== SYSTÈME ANTI-TRICHE (compatible pubs) =====
             const maxPointsPerGame = 120; // 5 pts × 10 Q + 2 bonus × 10 + 50 perfect
-            const maxCoinsPerGame = 120;  // identique pour les jetons de jeu
+            const maxCoinsPerGame = 55;  // 2 × 10 base + 1 × 10 rapide + 25 parfait
             
             const totalGames = userData.totalGames || 1;
             const maxPointsTheoriques = maxPointsPerGame * totalGames * 1.5;
@@ -3917,12 +3917,25 @@
                         });
                         
                         if (foundUser) {
-                            // Compte trouvé !
+                            // ✅ ANTI-FANTÔME : Supprimer le compte ghost AVANT de switcher
+                            const ghostUserId = localStorage.getItem('quizUserId');
+                            if (ghostUserId && ghostUserId !== foundUserId) {
+                                try {
+                                    const ghostUserRef = window.firebaseRef(window.firebaseDB, 'users/' + ghostUserId);
+                                    const ghostLeaderRef = window.firebaseRef(window.firebaseDB, 'leaderboard/' + ghostUserId);
+                                    await window.firebaseRemove(ghostUserRef);
+                                    await window.firebaseRemove(ghostLeaderRef);
+                                    console.log('✅ Compte fantôme supprimé:', ghostUserId);
+                                } catch(e) {
+                                    console.log('Erreur suppression fantôme:', e);
+                                }
+                            }
+
+                            // Compte trouvé — charger l'ancien compte
                             userId = foundUserId;
                             userData = foundUser;
                             localStorage.setItem('quizUserId', userId);
                             localStorage.setItem('userData', JSON.stringify(userData));
-                            // Sauvegarder le code en clair dans localStorage
                             localStorage.setItem('recoveryCodePlain_' + userId, code);
                             
                             closeRestoreModal();
