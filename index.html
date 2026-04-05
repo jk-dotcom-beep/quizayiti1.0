@@ -1815,6 +1815,29 @@
                 <button class="btn btn-secondary" onclick="showRestoreModal()">🔑 Restaurer mon compte</button>
                 <button class="btn btn-secondary" onclick="resetData()">🗑️ Réinitialiser</button>
                 <button class="btn btn-secondary" onclick="confirmDeleteAccount()" style="background: #dc2626; color: white; border: none; margin-top: 8px;">🗑️ Supprimer mon compte</button>
+
+                <!-- CRÉDITS MUSICAUX -->
+                <div class="settings-section" style="margin-top: 20px;">
+                    <div class="settings-title" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;" onclick="toggleCredits()">
+                        <span>🎵 Crédits Musicaux</span>
+                        <span id="creditsArrow" style="font-size:12px;">▼ Voir</span>
+                    </div>
+                    <div id="creditsContent" style="display:none; font-size: 12px; color: var(--text-secondary); line-height: 1.8; padding: 8px 0;">
+                        <p style="margin: 4px 0;"><strong>⚡ Uncatchable</strong><br>Alexandr Zhelanov — <a href="https://soundcloud.com/alexandr-zhelanov" target="_blank" style="color: var(--primary);">soundcloud.com/alexandr-zhelanov</a><br>Licence CC BY 3.0</p>
+                        <p style="margin: 10px 0 4px 0;"><strong>🌟 Inspiring Journey</strong><br>Leo Sokolovsky — <a href="https://soundcloud.com/sokolovskymusic" target="_blank" style="color: var(--primary);">soundcloud.com/sokolovskymusic</a><br>Licence CC BY 3.0</p>
+                        <p style="margin: 10px 0 4px 0;"><strong>🥁 Juggernaut</strong><br>Scott Buckley — <a href="https://www.scottbuckley.com.au" target="_blank" style="color: var(--primary);">scottbuckley.com.au</a><br>Licence CC BY 4.0</p>
+                        <p style="margin: 8px 0 0 0; font-size: 11px; opacity: 0.7;">Musiques téléchargées via auboutdufil.com</p>
+                    </div>
+                </div>
+
+                <!-- CONTACT & COMMENTAIRES -->
+                <div class="settings-section" style="margin-top: 10px;">
+                    <div class="settings-title">📧 Contact & Commentaires</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); padding: 8px 0; line-height: 1.6;">
+                        Pour tout commentaire sur le jeu, les questions ou autre, contactez-nous :<br>
+                        <a href="mailto:quizayiti@gmail.com" style="color: var(--primary); font-weight: 600;">quizayiti@gmail.com</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1945,7 +1968,7 @@
         let pianoSynth;
         let violinSynth;
         let soundEnabled = false;
-        let bgMusicEnabled = false;
+        let bgMusicEnabled = true;
         let bgMusicTrack = 'uncatchable'; // 'uncatchable', 'inspiring' ou 'juggernaut'
         let bgAudio = null;
         let vibrationEnabled = true;
@@ -2302,12 +2325,55 @@
             await loadFriendRequests(); // Charger demandes d'amis
             updateFriendsBadge(); // Afficher badge si nouvelles demandes
             await checkPendingNotifications(); // ✅ Afficher notifications cœurs/jetons reçus
+            initRealtimeNotifications(); // ✅ Écouter notifications en temps réel
             initPushNotifications(); // 🔔 Notifications locales
             // ✅ FIX deleteAccount : afficher modal restauration si demandé
             if (localStorage.getItem('showRestoreOnLoad') === 'true') {
                 localStorage.removeItem('showRestoreOnLoad');
                 setTimeout(() => showRestoreModal(), 1000);
             }
+        }
+
+        // ===== NOTIFICATIONS TEMPS RÉEL (Firebase onValue) =====
+        function initRealtimeNotifications() {
+            if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseOnValue) return;
+            
+            const userRef = window.firebaseRef(window.firebaseDB, `users/${userId}/pendingNotifications`);
+            window.firebaseOnValue(userRef, async (snapshot) => {
+                if (!snapshot.exists()) return;
+                const notifs = snapshot.val();
+                if (!notifs || notifs.length === 0) return;
+                
+                // Éviter de rejouer les notifs déjà affichées au lancement
+                if (!window.realtimeNotifReady) {
+                    window.realtimeNotifReady = true;
+                    return;
+                }
+
+                // Afficher les nouvelles notifications
+                let notifText = '🎁 Nouvelles notifications :\n\n';
+                notifs.forEach(notif => {
+                    if (notif.type === 'heart') notifText += `💝 ${notif.from} t'a envoyé ${notif.amount} cœur(s) !\n`;
+                    else if (notif.type === 'coins') notifText += `💰 ${notif.from} t'a envoyé ${notif.amount} jetons !\n`;
+                    else if (notif.type === 'friendRequest') notifText += `👋 ${notif.from} veut être ton ami !\n`;
+                });
+
+                // Vider dans Firebase
+                if (window.firebaseUpdate) {
+                    await window.firebaseUpdate(
+                        window.firebaseRef(window.firebaseDB, `users/${userId}`),
+                        { pendingNotifications: [] }
+                    );
+                }
+                userData.pendingNotifications = [];
+                await saveUserData();
+
+                alert(notifText);
+                playCelebration();
+                vibrate([100, 50, 100]);
+                updateHeartsDisplay();
+                updateFriendsBadge();
+            });
         }
 
         // ===== SYSTÈME NOTIFICATIONS LOCALES =====
@@ -2481,7 +2547,8 @@
             
             // ✅ FIX : inclure les jetons gagnés via pubs pour éviter faux positifs
             const adCoinsEarned = userData.adCoinsEarned || 0;
-            const maxCoinsTheoriques = (maxCoinsPerGame * totalGames * 1.5) + adCoinsEarned;
+            const receivedCoinsTotal = userData.receivedCoinsTotal || 0;
+            const maxCoinsTheoriques = (maxCoinsPerGame * totalGames * 1.5) + adCoinsEarned + receivedCoinsTotal;
             
             if (userData.points > maxPointsTheoriques) {
                 console.warn('⚠️ Points suspects détectés - Réinitialisation');
@@ -2490,7 +2557,7 @@
             
             if (userData.coins > maxCoinsTheoriques) {
                 console.warn('⚠️ Jetons suspects détectés - Réinitialisation');
-                userData.coins = Math.floor((maxCoinsPerGame * totalGames) + adCoinsEarned);
+                userData.coins = Math.floor((maxCoinsPerGame * totalGames) + adCoinsEarned + receivedCoinsTotal);
             }
             // ===== FIN ANTI-TRICHE =====
             
@@ -2554,31 +2621,42 @@
 
                 const users = snapshot.val();
                 const searchLower = searchName.trim().toLowerCase();
+                const results = [];
                 
-                // Chercher utilisateur par nom (case insensitive)
+                // Chercher utilisateur par nom partiel (case insensitive)
                 for (const [uid, user] of Object.entries(users)) {
-                    if (user.name && user.name.toLowerCase() === searchLower) {
-                        // Ne pas retourner soi-même
-                        if (uid === userId) {
-                            alert('😄 C\'est toi ! Tu ne peux pas t\'ajouter comme ami.');
-                            return null;
-                        }
-                        
-                        // Vérifier si déjà ami
-                        if (userData.friends && userData.friends[uid]) {
-                            alert('✅ ' + user.name + ' est déjà ton ami !');
-                            return null;
-                        }
-                        
-                        // Vérifier si demande déjà envoyée
-                        if (userData.sentRequests && userData.sentRequests[uid]) {
-                            alert('⏳ Tu as déjà envoyé une demande à ' + user.name);
-                            return null;
-                        }
-                        
-                        return { uid: uid, name: user.name, points: user.points || 0 };
+                    if (user.name && user.name.toLowerCase().includes(searchLower)) {
+                        if (uid === userId) continue; // Pas soi-même
+                        results.push({ uid, name: user.name, points: user.points || 0 });
                     }
                 }
+                
+                if (results.length === 0) return null;
+                
+                // Prioriser correspondance exacte, puis partielle
+                const exact = results.find(r => r.name.toLowerCase() === searchLower);
+                const user = exact || results[0];
+                const uid = user.uid;
+                
+                // Vérifier si soi-même
+                if (uid === userId) {
+                    alert('😄 C\'est toi ! Tu ne peux pas t\'ajouter comme ami.');
+                    return null;
+                }
+                
+                // Vérifier si déjà ami
+                if (userData.friends && userData.friends[uid]) {
+                    alert('✅ ' + user.name + ' est déjà ton ami !');
+                    return null;
+                }
+                
+                // Vérifier si demande déjà envoyée
+                if (userData.sentRequests && userData.sentRequests[uid]) {
+                    alert('⏳ Tu as déjà envoyé une demande à ' + user.name);
+                    return null;
+                }
+                
+                return { uid: uid, name: user.name, points: user.points || 0 };
                 
                 return null;
             } catch (error) {
@@ -2599,18 +2677,22 @@
                 
                 // Ajouter la demande chez le destinataire
                 const targetRequestRef = window.firebaseRef(window.firebaseDB, `users/${targetUserId}/friendRequests/${userId}`);
-                await window.firebaseSet(targetRequestRef, {
-                    name: userData.name,
-                    date: now
-                });
+                await window.firebaseSet(targetRequestRef, { name: userData.name, date: now });
+
+                // ✅ Notification temps réel au destinataire
+                if (window.firebaseGet && window.firebaseUpdate) {
+                    const targetRef = window.firebaseRef(window.firebaseDB, `users/${targetUserId}`);
+                    const snap = await window.firebaseGet(targetRef);
+                    if (snap.exists()) {
+                        const targetData = snap.val();
+                        const notifs = targetData.pendingNotifications || [];
+                        notifs.push({ type: 'friendRequest', from: userData.name, fromId: userId, date: now });
+                        await window.firebaseUpdate(targetRef, { pendingNotifications: notifs });
+                    }
+                }
                 
-                // Ajouter dans sentRequests de l'envoyeur
                 if (!userData.sentRequests) userData.sentRequests = {};
-                userData.sentRequests[targetUserId] = {
-                    name: targetUserName,
-                    date: now
-                };
-                
+                userData.sentRequests[targetUserId] = { name: targetUserName, date: now };
                 await saveUserData();
                 
                 alert('✅ Demande d\'ami envoyée à ' + targetUserName + ' !');
@@ -2696,14 +2778,25 @@
         }
 
         async function sendHeartGift(friendId, friendName) {
-            // Vérifier qu'on a au moins 1 cœur
             if (userData.hearts < 1) {
                 alert('❌ Tu n\'as pas de cœur à envoyer ! Achètes-en dans la boutique.');
                 return false;
             }
-
             if (!isOnline || !window.firebaseDB || !window.firebaseRef || !window.firebaseUpdate || !window.firebaseGet) {
                 alert('❌ Tu dois être connecté à internet');
+                return false;
+            }
+
+            // ✅ Limite 3 cœurs/jour par personne
+            const today = new Date().toDateString();
+            if (!userData.heartsSentToday) userData.heartsSentToday = {};
+            if (!userData.lastHeartSentDate || userData.lastHeartSentDate !== today) {
+                userData.heartsSentToday = {};
+                userData.lastHeartSentDate = today;
+            }
+            const sentToFriend = userData.heartsSentToday[friendId] || 0;
+            if (sentToFriend >= 3) {
+                alert(`⚠️ Tu as déjà envoyé 3 cœurs à ${friendName} aujourd'hui !\nReviens demain. 💝`);
                 return false;
             }
 
@@ -2712,58 +2805,39 @@
             }
 
             try {
-                // Récupérer les données de l'ami
                 const friendRef = window.firebaseRef(window.firebaseDB, `users/${friendId}`);
                 const friendSnapshot = await window.firebaseGet(friendRef);
-                
-                if (!friendSnapshot.exists()) {
-                    alert('❌ Ami introuvable');
-                    return false;
-                }
+                if (!friendSnapshot.exists()) { alert('❌ Ami introuvable'); return false; }
                 
                 const friendData = friendSnapshot.val();
-                
-                // Vérifier limite 25 cœurs de l'ami
                 const friendHearts = friendData.hearts || 0;
                 if (friendHearts >= 25) {
                     alert('⚠️ ' + friendName + ' a déjà le maximum de cœurs (25) !');
                     return false;
                 }
                 
-                // Retirer 1 cœur à soi
                 userData.hearts--;
+                userData.heartsSentToday[friendId] = sentToFriend + 1;
+                userData.lastHeartSentDate = today;
                 await saveUserData();
                 
-                // ✅ FIX CRITIQUE : Utiliser firebaseUpdate au lieu de firebaseSet
                 const newFriendHearts = Math.min(friendHearts + 1, 25);
-                const notification = {
-                    type: 'heart',
-                    from: userData.name,
-                    fromId: userId,
-                    amount: 1,
-                    date: new Date().toISOString()
-                };
-                
-                // Récupérer notifications existantes et ajouter la nouvelle
                 const friendPendingNotifs = friendData.pendingNotifications || [];
-                friendPendingNotifs.push(notification);
+                friendPendingNotifs.push({ type: 'heart', from: userData.name, fromId: userId, amount: 1, date: new Date().toISOString() });
                 
-                // UPDATE seulement hearts + pendingNotifications (pas tout l'objet)
                 await window.firebaseUpdate(friendRef, {
                     hearts: newFriendHearts,
                     pendingNotifications: friendPendingNotifs
                 });
                 
                 updateHeartsDisplay();
-                alert('✅ 1 cœur envoyé à ' + friendName + ' ! 💝');
-                
+                const remaining = 3 - (sentToFriend + 1);
+                alert(`✅ 1 cœur envoyé à ${friendName} ! 💝\n${remaining > 0 ? `Il te reste ${remaining} envoi(s) aujourd'hui.` : 'Limite atteinte pour aujourd\'hui !'}`);
                 playSound('correct');
                 vibrate(50);
-                
                 return true;
             } catch (error) {
                 console.error('Erreur envoi cœur:', error);
-                // Restaurer le cœur en cas d'erreur
                 userData.hearts++;
                 await saveUserData();
                 updateHeartsDisplay();
@@ -2774,15 +2848,18 @@
 
         async function sendCoinsGift(friendId, friendName) {
             // Demander le montant
-            const amount = prompt(`💰 Combien de jetons veux-tu envoyer à ${friendName} ?\n\nTu as ${userData.coins} 🪙`, '50');
+            const amount = prompt(`💰 Combien de jetons veux-tu envoyer à ${friendName} ?\n\nTu as ${userData.coins} 🪙\n(Max 1000 par envoi)`, '50');
             
-            if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
-                return false;
-            }
+            if (!amount || isNaN(amount) || parseInt(amount) <= 0) return false;
 
             const coinsToSend = parseInt(amount);
 
-            // Vérifier qu'on a assez de jetons
+            // ✅ Max 1000 jetons par envoi
+            if (coinsToSend > 1000) {
+                alert('❌ Maximum 1000 jetons par envoi !');
+                return false;
+            }
+
             if (userData.coins < coinsToSend) {
                 alert(`❌ Tu n'as pas assez de jetons ! Tu as ${userData.coins} 🪙`);
                 return false;
@@ -2793,56 +2870,62 @@
                 return false;
             }
 
-            if (!confirm(`💰 Envoyer ${coinsToSend} jetons à ${friendName} ?`)) {
+            // ✅ Max 5 envois/jour à la même personne
+            const today = new Date().toDateString();
+            if (!userData.coinsSentToday) userData.coinsSentToday = {};
+            if (!userData.lastCoinSentDate || userData.lastCoinSentDate !== today) {
+                userData.coinsSentToday = {};
+                userData.lastCoinSentDate = today;
+            }
+            const sentToFriend = userData.coinsSentToday[friendId] || 0;
+            if (sentToFriend >= 5) {
+                alert(`⚠️ Tu as déjà fait 5 envois à ${friendName} aujourd'hui !\nReviens demain. 💰`);
                 return false;
             }
 
+            if (!confirm(`💰 Envoyer ${coinsToSend} jetons à ${friendName} ?`)) return false;
+
             try {
-                // Récupérer les données de l'ami
                 const friendRef = window.firebaseRef(window.firebaseDB, `users/${friendId}`);
                 const friendSnapshot = await window.firebaseGet(friendRef);
-                
-                if (!friendSnapshot.exists()) {
-                    alert('❌ Ami introuvable');
-                    return false;
-                }
+                if (!friendSnapshot.exists()) { alert('❌ Ami introuvable'); return false; }
                 
                 const friendData = friendSnapshot.val();
-                
+
                 // Retirer jetons à soi
                 userData.coins -= coinsToSend;
+                userData.coinsSentToday[friendId] = sentToFriend + 1;
+                userData.lastCoinSentDate = today;
+                // ✅ Anti-triche : tracker les jetons reçus côté destinataire
                 await saveUserData();
                 
-                // ✅ FIX CRITIQUE : Utiliser firebaseUpdate au lieu de firebaseSet
                 const newFriendCoins = (friendData.coins || 0) + coinsToSend;
-                const notification = {
+                // ✅ Tracker jetons reçus pour exclure de l'anti-triche
+                const newFriendReceivedCoins = (friendData.receivedCoinsTotal || 0) + coinsToSend;
+                
+                const friendPendingNotifs = friendData.pendingNotifications || [];
+                friendPendingNotifs.push({
                     type: 'coins',
                     from: userData.name,
                     fromId: userId,
                     amount: coinsToSend,
                     date: new Date().toISOString()
-                };
+                });
                 
-                // Récupérer notifications existantes et ajouter la nouvelle
-                const friendPendingNotifs = friendData.pendingNotifications || [];
-                friendPendingNotifs.push(notification);
-                
-                // UPDATE seulement coins + pendingNotifications (pas tout l'objet)
                 await window.firebaseUpdate(friendRef, {
                     coins: newFriendCoins,
+                    receivedCoinsTotal: newFriendReceivedCoins,
                     pendingNotifications: friendPendingNotifs
                 });
                 
                 updateUserDisplay();
-                alert(`✅ ${coinsToSend} jetons envoyés à ${friendName} ! 💰`);
-                
+                const remaining = 5 - (sentToFriend + 1);
+                alert(`✅ ${coinsToSend} jetons envoyés à ${friendName} ! 💰\n${remaining > 0 ? `Il te reste ${remaining} envoi(s) aujourd'hui.` : 'Limite atteinte pour aujourd\'hui !'}`);
                 playSound('correct');
                 vibrate(50);
-                
                 return true;
             } catch (error) {
                 console.error('Erreur envoi jetons:', error);
-                // Restaurer les jetons en cas d'erreur
                 userData.coins += coinsToSend;
                 await saveUserData();
                 updateUserDisplay();
@@ -3691,14 +3774,27 @@
             timerDuration = parseInt(localStorage.getItem('timerDuration') || '30');
             document.getElementById('timerDuration').value = timerDuration;
 
-            // ✅ Musique de fond
-            bgMusicEnabled = localStorage.getItem('bgMusicEnabled') === 'true';
+            // ✅ Musique de fond — active par défaut si jamais configuré
+            const savedMusic = localStorage.getItem('bgMusicEnabled');
+            bgMusicEnabled = savedMusic === null ? true : savedMusic === 'true';
             bgMusicTrack = localStorage.getItem('bgMusicTrack') || 'uncatchable';
             document.getElementById('bgMusicToggle').classList.toggle('active', bgMusicEnabled);
             document.getElementById('trackUncatchable').classList.toggle('track-active', bgMusicTrack === 'uncatchable');
             document.getElementById('trackInspiring').classList.toggle('track-active', bgMusicTrack === 'inspiring');
             document.getElementById('trackJuggernaut').classList.toggle('track-active', bgMusicTrack === 'juggernaut');
             initBgMusic();
+        }
+
+        function toggleCredits() {
+            const content = document.getElementById('creditsContent');
+            const arrow = document.getElementById('creditsArrow');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                arrow.textContent = '▲ Masquer';
+            } else {
+                content.style.display = 'none';
+                arrow.textContent = '▼ Voir';
+            }
         }
 
         function toggleSound() {
@@ -3826,35 +3922,37 @@
         }
 
         function resetData() {
-            if (confirm('Voulez-vous vraiment réinitialiser toutes vos données ?')) {
-                userData = {
-                    name: 'Érudit' + Math.floor(Math.random() * 9000 + 1000),
-                    points: 0,
-                    coins: 0,
-                    hearts: 3,
-                    purchasedHearts: 0,
-                    lastHeartReset: '',
-                    lastHeartRegenTime: '', // NOUVEAU
-                    totalGames: 0,
-                    correctAnswers: 0,
-                    totalAnswers: 0,
-                    streak: 0,
-                    lastPlayed: '',
-                    level: 1,
-                    perfectGames: 0,
-                    badges: {},
-                    badgeProgress: {},
-                    categoryStats: {},
-                    dailyChallengeCompleted: false,
-                    lastChallengeDate: '',
-                    recoveryCode: generateRecoveryCode()
-                };
-                askedQuestionsIds = [];
-                saveUserData();
-                updateUI();
-                updateHeartsDisplay();
-                alert('Données réinitialisées ! 🔄');
-            }
+            if (!confirm('⚠️ Voulez-vous vraiment réinitialiser toutes vos données ?\n\nTous vos points, jetons, badges et progression seront perdus.')) return;
+            if (!confirm('🚨 Dernière confirmation !\n\nCette action est IRRÉVERSIBLE.\nÊtes-vous absolument certain(e) ?')) return;
+            
+            userData = {
+                name: 'Érudit' + Math.floor(Math.random() * 9000 + 1000),
+                points: 0,
+                coins: 0,
+                hearts: 3,
+                purchasedHearts: 0,
+                lastHeartReset: '',
+                lastHeartRegenTime: '',
+                totalGames: 0,
+                correctAnswers: 0,
+                totalAnswers: 0,
+                streak: 0,
+                lastPlayed: '',
+                level: 1,
+                perfectGames: 0,
+                badges: {},
+                badgeProgress: {},
+                categoryStats: {},
+                dailyChallengeCompleted: false,
+                lastChallengeDate: '',
+                recoveryCode: generateRecoveryCode()
+            };
+            askedQuestionsIds = [];
+            localStorage.removeItem('quizWelcomeDone'); // Reset bienvenue aussi
+            saveUserData();
+            updateUI();
+            updateHeartsDisplay();
+            alert('Données réinitialisées ! 🔄');
         }
 
         function copyRecoveryCode() {
@@ -4029,6 +4127,16 @@
         // Navigation
         function closeWelcome() {
             hideAllScreens();
+            // ✅ Message bienvenue + 3 cœurs cadeau au premier lancement
+            const isNewPlayer = !localStorage.getItem('quizWelcomeDone');
+            if (isNewPlayer) {
+                localStorage.setItem('quizWelcomeDone', 'true');
+                userData.hearts = 3;
+                saveUserData();
+                setTimeout(() => {
+                    alert('🎉 Bienvenue sur QuizAyiti !\nByenveni nan QuizAyiti !\n\n❤️❤️❤️ Nou ba ou 3 kè kòm kado pou ou kòmanse !\nOn t\'offre 3 cœurs en cadeau pour commencer !\n\nBòn chans ! 🇭🇹');
+                }, 500);
+            }
             showMenu();
         }
 
@@ -4267,9 +4375,26 @@
             hideAllScreens();
             document.querySelector('.leaderboard-screen').classList.add('active');
             await loadLeaderboard();
+
+            // ✅ Listener temps réel leaderboard — mise à jour auto des likes/points
+            if (isOnline && window.firebaseDB && window.firebaseRef && window.firebaseOnValue) {
+                if (window.leaderboardListener) window.leaderboardListener(); // Détacher l'ancien
+                const leaderRef = window.firebaseRef(window.firebaseDB, 'leaderboard');
+                window.leaderboardListener = window.firebaseOnValue(leaderRef, () => {
+                    // Recharger seulement si l'écran est visible
+                    if (document.querySelector('.leaderboard-screen').classList.contains('active')) {
+                        loadLeaderboard();
+                    }
+                });
+            }
         }
 
         function goBackFromLeaderboard() {
+            // ✅ Détacher le listener temps réel
+            if (window.leaderboardListener) {
+                window.leaderboardListener();
+                window.leaderboardListener = null;
+            }
             hideAllScreens();
             if (returnToScreen === 'result') {
                 document.querySelector('.result-screen').classList.add('active');
