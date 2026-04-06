@@ -1,12 +1,15 @@
 // QuizAyiti Service Worker - Version 3.0 (Offline-first, questions.json local)
-const CACHE_NAME = 'quizayiti-v3';
+const CACHE_NAME = 'quizayiti-v4';
 const urlsToCache = [
   '/quizayiti1.0/',
   '/quizayiti1.0/index.html',
   '/quizayiti1.0/manifest.json',
   '/quizayiti1.0/questions.json',
   '/quizayiti1.0/icon-192.png',
-  '/quizayiti1.0/icon-512.png'
+  '/quizayiti1.0/icon-512.png',
+  '/quizayiti1.0/music-uncatchable.mp3',
+  '/quizayiti1.0/music-inspiring.mp3',
+  '/quizayiti1.0/music-juggernaut.mp3'
 ];
 
 const MESSAGES = {
