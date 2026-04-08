@@ -1616,7 +1616,7 @@
 
             <!-- Sélection Thématique -->
             <div class="category-screen">
-                <button class="back-btn" onclick="showMenu()">← Retour</button>
+                <button class="back-btn" onclick="goBackFromCategory()">← Retour</button>
                 <h2 style="margin-bottom: 15px; color: var(--text-primary); font-size: 18px;">Choisis ta thématique</h2>
                 <div class="category-grid" id="categoryGrid"></div>
             </div>
@@ -1823,9 +1823,9 @@
                         <span id="creditsArrow" style="font-size:12px;">▼ Voir</span>
                     </div>
                     <div id="creditsContent" style="display:none; font-size: 12px; color: var(--text-secondary); line-height: 1.8; padding: 8px 0;">
-                        <p style="margin: 4px 0;"><strong>⚡ Uncatchable</strong><br>Alexandr Zhelanov — <a href="https://soundcloud.com/alexandr-zhelanov" target="_blank" style="color: var(--primary);">soundcloud.com/alexandr-zhelanov</a><br>Licence CC BY 3.0</p>
-                        <p style="margin: 10px 0 4px 0;"><strong>🌟 Inspiring Journey</strong><br>Leo Sokolovsky — <a href="https://soundcloud.com/sokolovskymusic" target="_blank" style="color: var(--primary);">soundcloud.com/sokolovskymusic</a><br>Licence CC BY 3.0</p>
-                        <p style="margin: 10px 0 4px 0;"><strong>🥁 Juggernaut</strong><br>Scott Buckley — <a href="https://www.scottbuckley.com.au" target="_blank" style="color: var(--primary);">scottbuckley.com.au</a><br>Licence CC BY 4.0</p>
+                        <p style="margin: 4px 0;"><strong>⚡ Uncatchable</strong><br>Alexandr Zhelanov — <a href="#" onclick="window.open('https://soundcloud.com/alexandr-zhelanov','_system'); return false;" style="color: var(--primary);">soundcloud.com/alexandr-zhelanov</a><br>Licence CC BY 3.0</p>
+                        <p style="margin: 10px 0 4px 0;"><strong>🌟 Inspiring Journey</strong><br>Leo Sokolovsky — <a href="#" onclick="window.open('https://soundcloud.com/sokolovskymusic','_system'); return false;" style="color: var(--primary);">soundcloud.com/sokolovskymusic</a><br>Licence CC BY 3.0</p>
+                        <p style="margin: 10px 0 4px 0;"><strong>🥁 Juggernaut</strong><br>Scott Buckley — <a href="#" onclick="window.open('https://www.scottbuckley.com.au','_system'); return false;" style="color: var(--primary);">scottbuckley.com.au</a><br>Licence CC BY 4.0</p>
                         <p style="margin: 8px 0 0 0; font-size: 11px; opacity: 0.7;">Musiques téléchargées via auboutdufil.com</p>
                     </div>
                 </div>
@@ -1835,7 +1835,7 @@
                     <div class="settings-title">📧 Contact & Commentaires</div>
                     <div style="font-size: 13px; color: var(--text-secondary); padding: 8px 0; line-height: 1.6;">
                         Pour tout commentaire sur le jeu, les questions ou autre, contactez-nous :<br>
-                        <a href="mailto:quizayiti@gmail.com" style="color: var(--primary); font-weight: 600;">quizayiti@gmail.com</a>
+                        <a href="/cdn-cgi/l/email-protection#3544405c4f544c5c415c755258545c591b565a58" style="color: var(--primary); font-weight: 600;"><span class="__cf_email__" data-cfemail="6b1a1e02110a12021f022b0c060a020745080406">[email&#160;protected]</span></a>
                     </div>
                 </div>
             </div>
@@ -1843,7 +1843,7 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script type="module">
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, set, get, remove, update, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
@@ -1888,7 +1888,7 @@
         
     </script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="Tone.js"></script>
     <script>
         // Configuration
         // Questions chargées depuis questions.json local (offline-first)
@@ -4359,9 +4359,28 @@
         }
 
         function showCategories() {
+            // Mémoriser l'écran actif avant d'ouvrir les catégories
+            if (document.querySelector('.result-screen').classList.contains('active')) {
+                returnToScreen = 'result';
+            } else if (document.querySelector('.profile-screen').classList.contains('active')) {
+                returnToScreen = 'profile';
+            } else {
+                returnToScreen = 'menu';
+            }
             hideAllScreens();
             document.querySelector('.category-screen').classList.add('active');
             populateCategories();
+        }
+
+        function goBackFromCategory() {
+            hideAllScreens();
+            if (returnToScreen === 'result') {
+                document.querySelector('.result-screen').classList.add('active');
+            } else if (returnToScreen === 'profile') {
+                document.querySelector('.profile-screen').classList.add('active');
+            } else {
+                showMenu();
+            }
         }
 
         async function showLeaderboard() {
@@ -5156,8 +5175,4 @@
                 <div class="stats">
                     <div class="stat-row">
                         <span class="stat-label">Points totaux</span>
-                        <span class="stat-value" id="detailsPoints">0</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Taux de réussite</span>
-                        <span class="stat-value" 
+                        <sp
