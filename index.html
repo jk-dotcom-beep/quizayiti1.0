@@ -1843,7 +1843,7 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
+    <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, set, get, remove, update, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
@@ -2602,7 +2602,7 @@
             }
 
             if (!searchName || searchName.trim() === '') {
-                alert('⚠️ Entre un nom d\'utilisateur');
+                alert('⚠️ Saisis le nom d\'un joueur pour rechercher');
                 return null;
             }
 
@@ -3139,7 +3139,7 @@
             const resultDiv = document.getElementById('searchFriendResult');
             
             if (!searchName) {
-                resultDiv.innerHTML = '<div style="color: #ef4444;">⚠️ Entre un nom d\'utilisateur</div>';
+                resultDiv.innerHTML = '<div style="color: #ef4444;">⚠️ Saisis le nom d\'un joueur pour rechercher</div>';
                 return;
             }
             
@@ -5115,12 +5115,12 @@
                     <input 
                         type="text" 
                         id="searchFriendInput" 
-                        placeholder="Nom d'utilisateur exact..." 
+                        placeholder="Cherche un joueur par son nom..." 
                         style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 16px; background: var(--bg-secondary); color: var(--text-primary); box-sizing: border-box;"
                         onkeypress="if(event.key === 'Enter') handleSearchFriend()"
                     >
                 </div>
-                <div id="searchFriendResult" style="min-height: 60px; margin-bottom: 20px;"></div>
+                <div id="searchFriendResult" style="max-height: 55vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; padding-right: 4px;"></div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn btn-primary" onclick="handleSearchFriend()">🔍 Rechercher</button>
                     <button class="btn btn-secondary" onclick="closeSearchFriendModal()">← Annuler</button>
@@ -5160,8 +5160,4 @@
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Taux de réussite</span>
-                        <span class="stat-value" id="detailsAccuracy">0%</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Badges gagnés</span>
-                        <span class="stat-value" id="detailsBadges">0 �
+                        <span class="stat-value" 
