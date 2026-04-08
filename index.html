@@ -1843,7 +1843,7 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script type="module">
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, set, get, remove, update, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
@@ -1886,18 +1886,6 @@
             });
         }
         
-        // Gestion du prompt d'installation PWA
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('💾 Installation PWA disponible');
-            // L'utilisateur peut maintenant installer l'app via son navigateur
-        });
-        
-        window.addEventListener('appinstalled', () => {
-            console.log('✅ PWA installée avec succès !');
-            deferredPrompt = null;
-        });
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
@@ -1962,7 +1950,6 @@
         let returnToScreen = 'menu';
         let previousLevel = 1;
         let pointsBeforeQuiz = 0; // Points avant de commencer le quiz
-        let deferredPrompt = null; // Pour l'installation PWA
 
         // Audio
         let pianoSynth;
@@ -2436,6 +2423,12 @@
             if (data.badgeProgress === undefined) data.badgeProgress = {};
             if (data.categoryStats === undefined) data.categoryStats = {};
             if (data.purchasedHearts === undefined) data.purchasedHearts = 0;
+            if (data.heartsSentToday === undefined) data.heartsSentToday = {};
+            if (data.coinsSentToday === undefined) data.coinsSentToday = {};
+            if (data.lastHeartSentDate === undefined) data.lastHeartSentDate = '';
+            if (data.lastCoinSentDate === undefined) data.lastCoinSentDate = '';
+            if (data.receivedCoinsTotal === undefined) data.receivedCoinsTotal = 0;
+            if (data.adCoinsEarned === undefined) data.adCoinsEarned = 0;
             if (data.recoveryCodeHash && !data.recoveryCode) {
                 const newCode = generateRecoveryCode();
                 data.recoveryCode = newCode;
@@ -2617,7 +2610,7 @@
                 const usersRef = window.firebaseRef(window.firebaseDB, 'users');
                 const snapshot = await window.firebaseGet(usersRef);
                 
-                if (!snapshot.exists()) return null;
+                if (!snapshot.exists()) return [];
 
                 const users = snapshot.val();
                 const searchLower = searchName.trim().toLowerCase();
@@ -2627,38 +2620,28 @@
                 for (const [uid, user] of Object.entries(users)) {
                     if (user.name && user.name.toLowerCase().includes(searchLower)) {
                         if (uid === userId) continue; // Pas soi-même
-                        results.push({ uid, name: user.name, points: user.points || 0 });
+                        const isAlreadyFriend = !!(userData.friends && userData.friends[uid]);
+                        const hasSentRequest = !!(userData.sentRequests && userData.sentRequests[uid]);
+                        results.push({
+                            uid,
+                            name: user.name,
+                            points: user.points || 0,
+                            isAlreadyFriend,
+                            hasSentRequest
+                        });
                     }
                 }
                 
-                if (results.length === 0) return null;
+                // Trier : correspondances exactes en premier, puis par points
+                results.sort((a, b) => {
+                    const aExact = a.name.toLowerCase() === searchLower ? 0 : 1;
+                    const bExact = b.name.toLowerCase() === searchLower ? 0 : 1;
+                    if (aExact !== bExact) return aExact - bExact;
+                    return b.points - a.points;
+                });
                 
-                // Prioriser correspondance exacte, puis partielle
-                const exact = results.find(r => r.name.toLowerCase() === searchLower);
-                const user = exact || results[0];
-                const uid = user.uid;
+                return results;
                 
-                // Vérifier si soi-même
-                if (uid === userId) {
-                    alert('😄 C\'est toi ! Tu ne peux pas t\'ajouter comme ami.');
-                    return null;
-                }
-                
-                // Vérifier si déjà ami
-                if (userData.friends && userData.friends[uid]) {
-                    alert('✅ ' + user.name + ' est déjà ton ami !');
-                    return null;
-                }
-                
-                // Vérifier si demande déjà envoyée
-                if (userData.sentRequests && userData.sentRequests[uid]) {
-                    alert('⏳ Tu as déjà envoyé une demande à ' + user.name);
-                    return null;
-                }
-                
-                return { uid: uid, name: user.name, points: user.points || 0 };
-                
-                return null;
             } catch (error) {
                 console.error('Erreur recherche:', error);
                 alert('❌ Erreur lors de la recherche');
@@ -3162,20 +3145,38 @@
             
             resultDiv.innerHTML = '<div style="color: #3b82f6;">🔍 Recherche en cours...</div>';
             
-            const user = await searchUserByName(searchName);
+            const results = await searchUserByName(searchName);
             
-            if (!user) {
-                resultDiv.innerHTML = '<div style="color: #ef4444;">❌ Utilisateur introuvable</div>';
+            if (!results || results.length === 0) {
+                resultDiv.innerHTML = '<div style="color: #ef4444;">❌ Aucun joueur trouvé</div>';
             } else {
-                resultDiv.innerHTML = `
-                    <div class="search-result">
-                        <div class="search-result-name">👤 ${user.name}</div>
-                        <div class="search-result-points">⭐ ${user.points} points</div>
-                        <button class="btn btn-primary" onclick="sendFriendRequest('${user.uid}', '${user.name.replace(/'/g, "\\'")}'); closeSearchFriendModal();">
-                            ➕ Ajouter en ami
-                        </button>
-                    </div>
-                `;
+                const items = results.map(user => {
+                    if (user.isAlreadyFriend) {
+                        return `
+                            <div class="search-result">
+                                <div class="search-result-name">👤 ${user.name}</div>
+                                <div class="search-result-points">⭐ ${user.points} points</div>
+                                <div style="color: #22c55e; font-size: 0.85em;">✅ Déjà ami</div>
+                            </div>`;
+                    } else if (user.hasSentRequest) {
+                        return `
+                            <div class="search-result">
+                                <div class="search-result-name">👤 ${user.name}</div>
+                                <div class="search-result-points">⭐ ${user.points} points</div>
+                                <div style="color: #f59e0b; font-size: 0.85em;">⏳ Demande envoyée</div>
+                            </div>`;
+                    } else {
+                        return `
+                            <div class="search-result">
+                                <div class="search-result-name">👤 ${user.name}</div>
+                                <div class="search-result-points">⭐ ${user.points} points</div>
+                                <button class="btn btn-primary" onclick="sendFriendRequest('${user.uid}', '${user.name.replace(/'/g, "\\'")}'); closeSearchFriendModal();">
+                                    ➕ Ajouter en ami
+                                </button>
+                            </div>`;
+                    }
+                }).join('');
+                resultDiv.innerHTML = `<div style="font-size:0.8em;color:#6b7280;margin-bottom:8px;">${results.length} joueur${results.length > 1 ? 's' : ''} trouvé${results.length > 1 ? 's' : ''}</div>` + items;
             }
         }
 
@@ -4593,7 +4594,7 @@
                 sessionPoints += basePoints;
                 sessionBonusPoints += speedBonus;
                 
-                // ✅ DÉJÀ CORRECT : 5 jetons base + 2 bonus
+                // 2 jetons base + 1 bonus rapide
                 const baseCoins = 2;
                 const coinBonus = timeLeft > (timerDuration - 15) ? 1 : 0;
                 sessionCoins += (baseCoins + coinBonus);
@@ -5163,12 +5164,4 @@
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Badges gagnés</span>
-                        <span class="stat-value" id="detailsBadges">0 🏅</span>
-                    </div>
-                </div>
-                <button class="btn btn-primary" onclick="closePlayerDetails()" style="margin-top: 20px;">Fermer</button>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+                        <span class="stat-value" id="detailsBadges">0 �
