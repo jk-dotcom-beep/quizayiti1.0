@@ -1835,7 +1835,7 @@
                     <div class="settings-title">📧 Contact & Commentaires</div>
                     <div style="font-size: 13px; color: var(--text-secondary); padding: 8px 0; line-height: 1.6;">
                         Pour tout commentaire sur le jeu, les questions ou autre, contactez-nous :<br>
-                        <a href="/cdn-cgi/l/email-protection#3544405c4f544c5c415c755258545c591b565a58" style="color: var(--primary); font-weight: 600;"><span class="__cf_email__" data-cfemail="6b1a1e02110a12021f022b0c060a020745080406">[email&#160;protected]</span></a>
+                        <a href="mailto:quizayiti@gmail.com" style="color: var(--primary); font-weight: 600;">quizayiti@gmail.com</a>
                     </div>
                 </div>
             </div>
@@ -1843,7 +1843,8 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
+    <!-- Firebase SDK -->
+    <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getDatabase, ref, set, get, remove, update, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
@@ -1889,6 +1890,8 @@
     </script>
 
     <script src="Tone.js"></script>
+    <!-- Unity Ads SDK -->
+    <script src="https://sdk.unityads.unity3d.com/UnityAds/4.9.2/webview.js"></script>
     <script>
         // Configuration
         // Questions chargées depuis questions.json local (offline-first)
@@ -2314,6 +2317,7 @@
             await checkPendingNotifications(); // ✅ Afficher notifications cœurs/jetons reçus
             initRealtimeNotifications(); // ✅ Écouter notifications en temps réel
             initPushNotifications(); // 🔔 Notifications locales
+            initUnityAds(); // 🎯 Unity Ads
             // ✅ FIX deleteAccount : afficher modal restauration si demandé
             if (localStorage.getItem('showRestoreOnLoad') === 'true') {
                 localStorage.removeItem('showRestoreOnLoad');
@@ -3573,17 +3577,57 @@
             if (shopCoinsEl) shopCoinsEl.textContent = userData.coins || 0;
         }
 
-        // PUBLICITÉ → JETONS (AdMob sera branché ici sur PC)
+        // ===== UNITY ADS =====
+        const UNITY_GAME_ID = '6086789';
+        const UNITY_PLACEMENT_ID = 'rewarded_quizayiti';
+        const UNITY_TEST_MODE = true; // ← passer à false avant publication finale
+
+        let unityAdsReady = false;
+
+        function initUnityAds() {
+            if (typeof UnityAds === 'undefined') return;
+            UnityAds.initialize(UNITY_GAME_ID, UNITY_TEST_MODE, {
+                onInitializationComplete: () => {
+                    unityAdsReady = true;
+                    UnityAds.load(UNITY_PLACEMENT_ID);
+                },
+                onInitializationFailed: (error) => {
+                    console.warn('Unity Ads init failed:', error);
+                }
+            });
+        }
+
         function watchAd() {
-            // TODO: Brancher AdMob Rewarded Ad ici sur PC
-            // Simulation temporaire — sera remplacé par vrai AdMob
-            // ✅ FIX ANTI-TRICHE : on track les jetons pub séparément
-            const coinsFromAd = 75;
-            userData.adCoinsEarned = (userData.adCoinsEarned || 0) + coinsFromAd;
-            userData.coins = (userData.coins || 0) + coinsFromAd;
-            saveUserData();
-            updateUI();
-            alert('📺 Fonctionnalité pub bientôt disponible !\nReviens après la mise à jour. 🚀');
+            if (!unityAdsReady || typeof UnityAds === 'undefined') {
+                // Fallback si Unity Ads pas disponible (hors-ligne ou non chargé)
+                alert('📺 Publicité non disponible pour le moment.\nRéessaie dans quelques instants.');
+                return;
+            }
+
+            UnityAds.show(UNITY_PLACEMENT_ID, {
+                onStart: () => {
+                    console.log('Pub Unity Ads démarrée');
+                },
+                onSkipped: () => {
+                    alert('⚠️ Tu dois regarder la pub entière pour recevoir tes jetons.');
+                    UnityAds.load(UNITY_PLACEMENT_ID);
+                },
+                onComplete: () => {
+                    // ✅ FIX ANTI-TRICHE : on track les jetons pub séparément
+                    const coinsFromAd = 75;
+                    userData.adCoinsEarned = (userData.adCoinsEarned || 0) + coinsFromAd;
+                    userData.coins = (userData.coins || 0) + coinsFromAd;
+                    saveUserData();
+                    updateUI();
+                    alert('🎉 Bravo ! Tu as gagné 75 jetons pour avoir regardé la pub !');
+                    UnityAds.load(UNITY_PLACEMENT_ID);
+                },
+                onFailed: (error) => {
+                    console.warn('Pub échouée:', error);
+                    alert('❌ La publicité n\'a pas pu se charger. Réessaie plus tard.');
+                    UnityAds.load(UNITY_PLACEMENT_ID);
+                }
+            });
         }
 
         // CORRIGÉ : Limite 25 cœurs max
