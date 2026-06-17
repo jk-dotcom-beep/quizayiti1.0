@@ -2539,7 +2539,7 @@
     "question": "Ki lòd mo ki kòrèk nan kesyon sa a ?",
     "options": [
       "Ki kote ou prale ?",
-      "Ou prale ki kote ?",
+      "Ki kote prale ou ?",
       "Ki ou kote prale ?",
       "Prale ou ki kote ?"
     ],
@@ -5399,7 +5399,7 @@
       "Fanmi tigre yo pi fò pase tout lòt bèt",
       "Timoun pote nati, karaktè ak valè fanmi kote yo"
     ],
-    "correctAnswer": "sDoti a",
+    "correctAnswer": "D",
     "explanation": "Pwovèb sa a di ke timoun eritye karaktè ak konpòtman fanmi yo. Li souliyen enpòtans edikasyon ak bon egzanp nan fanmi.",
     "difficulty": "Difficile"
   },
