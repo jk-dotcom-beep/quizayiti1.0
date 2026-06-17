@@ -2588,6 +2588,11 @@
                             userData = firebaseData;
                             localStorage.setItem('userData', JSON.stringify(userData));
                         }
+                        // ✅ FIX CODE RÉCUPÉRATION : toujours resynchroniser depuis Firebase
+                        if (userData.recoveryCode) {
+                            localStorage.setItem('recoveryCodePlain_' + userId, userData.recoveryCode);
+                        }
+                        await saveUserData();
                     } else if (!localData && !restorePending) {
                         // ✅ FIX FANTÔME : Créer un nouveau compte SEULEMENT si aucune restauration en attente
                         userData.name = 'Érudit' + Math.floor(Math.random() * 9000 + 1000);
@@ -4158,8 +4163,8 @@
         }
 
         function copyRecoveryCode() {
-            const plainCode = localStorage.getItem('recoveryCodePlain_' + userId);
-            const code = plainCode || '****-****-****-****';
+            const plainCode = localStorage.getItem('recoveryCodePlain_' + userId) || userData.recoveryCode;
+            const code = plainCode || 'QUIZ-XXXX-XXXX-XXXX';
             const input = document.getElementById('recoveryCodeDisplay');
             
             if (!plainCode) {
@@ -4386,8 +4391,8 @@
             // Afficher le code de récupération depuis localStorage
             const recoveryCodeEl = document.getElementById('recoveryCodeDisplay');
             if (recoveryCodeEl) {
-                const plainCode = localStorage.getItem('recoveryCodePlain_' + userId);
-                recoveryCodeEl.value = plainCode || '****-****-****-****';
+                const plainCode = localStorage.getItem('recoveryCodePlain_' + userId) || userData.recoveryCode;
+                recoveryCodeEl.value = plainCode || 'QUIZ-XXXX-XXXX-XXXX';
             }
             
             updateBadgesDisplay();
@@ -4881,8 +4886,6 @@
             
             document.getElementById('nextBtn').style.display = 'block';
             questionAnswered = true;
-            currentQuestionIndex++;
-            showQuestion();
         }
 
         function startTimer(resumeTime = null) {
