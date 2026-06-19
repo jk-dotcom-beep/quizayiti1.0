@@ -994,6 +994,7 @@
             height: 10px;
             background: #fbbf24;
             animation: confetti 3s linear;
+            pointer-events: none;
         }
 
         /* Cœurs */
@@ -1896,7 +1897,8 @@
 
     <script src="Tone.js"></script>
     <!-- Unity Ads SDK -->
-    <script src="https://sdk.unityads.unity3d.com/UnityAds/4.9.2/webview.js"></script>
+    <!-- ✅ Unity Ads SDK local (télécharger webview.js → renommer unity-ads-sdk.js dans www/) -->
+    <script src="unity-ads-sdk.js"></script>
     <script>
         // Configuration
         // Questions chargées depuis questions.json local (offline-first)
@@ -4784,6 +4786,9 @@
             document.getElementById('nextBtn').style.display = 'none';
             document.getElementById('explanationCard').classList.remove('show');
             questionAnswered = false;
+            // ✅ Remonter au début de la question
+            const contentDiv = document.querySelector('.content');
+            if (contentDiv) contentDiv.scrollTop = 0;
 
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = '';
@@ -4885,6 +4890,7 @@
             if (isCorrect) userData.categoryStats[questionCategory].correct++;
             
             document.getElementById('nextBtn').style.display = 'block';
+            document.getElementById('nextBtn').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             questionAnswered = true;
         }
 
