@@ -4894,6 +4894,11 @@
             questionAnswered = true;
         }
 
+        function nextQuestion() {
+            currentQuestionIndex++;
+            showQuestion();
+        }
+
         function startTimer(resumeTime = null) {
             timeLeft = resumeTime !== null ? resumeTime : timerDuration;
             const timerEl = document.getElementById('timer');
